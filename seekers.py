@@ -5,9 +5,11 @@ import copy
 import random
 
 
+speedup_factor = 1
 screen = None
 quit = False
 clock = None
+font = None
 width = 768
 height = 768
 goals = []
@@ -90,8 +92,10 @@ class Player:
   win_score = 100
 
   def __init__(self, name, ai):
+    global font
     self.name = name
     self.color = string_hash_color(name)
+    self.name_image = font.render(name, True, self.color)
     self.score = 0
     self.seekers = []
     self.ai = ai
@@ -133,6 +137,7 @@ def interpolate_color(c1, c2, t):
 def start():
   global screen
   global clock
+  global font
   global quit
   global width
   global height
@@ -142,6 +147,7 @@ def start():
   pygame.init()
   screen = pygame.display.set_mode((width, height))
   clock = pygame.time.Clock()
+  font = pygame.font.SysFont("monospace", 20, bold=True)
   random.seed()
 
   quit = False
@@ -158,11 +164,13 @@ def start():
   main_loop()
 
 def main_loop():
+  global speedup_factor
   global quit
   while not quit:
     handle_events()
-    call_ais()
-    game_logic()
+    for _ in range(speedup_factor):
+      call_ais()
+      game_logic()
     draw()
     clock.tick(50)  # 20ms relative to last tick
 
@@ -219,11 +227,11 @@ def game_logic():
         seeker_collided(s, t)
         seeker_collided(t, s_copy)
   # handle collisions of seekers with goals
-  for s in seekers:
+  for (p, s) in all_seekers():
     if (not s.disabled()):
       for i in range(0, len(goals)):
         if (goals[i].position - s.position).norm() < Seeker.radius + Goal.radius:
-          goal_scored(i)
+          goal_scored(p, i)
 
 def seeker_collided(s, t):
   # disable the seeker
@@ -240,7 +248,8 @@ def seeker_collided(s, t):
     if (ddn < Seeker.radius*2):
       s.position += dn * (ddn - Seeker.radius*2)
 
-def goal_scored(goal_index):
+def goal_scored(player, goal_index):
+  player.score += 1
   goals[goal_index] = Goal(random_position())
 
 def random_position():
@@ -250,10 +259,10 @@ def draw():
   global screen
   global goals
   # clear screen
-  screen.fill([0, 0, 50])
+  screen.fill([0, 0, 30])
   # draw goals
   for g in goals:
-    drawItem((255, 200, 0), g.position, Goal.radius)
+    draw_item((255, 200, 0), g.position, Goal.radius)
   # draw jet streams
   for (_, s) in all_seekers():
     a = (s.target - s.position).normalized()
@@ -264,11 +273,13 @@ def draw():
     color = p.color
     if (s.disabled()):
       color = interpolate_color(color, [0, 0, 0], 0.5)
-    drawItem(color, s.position, Seeker.radius)
+    draw_item(color, s.position, Seeker.radius)
+  # draw player's scores
+  draw_scores()
   # actually update display
   pygame.display.flip()
 
-def drawItem(color, center, radius):
+def draw_item(color, center, radius):
   global screen
   global width
   global height
@@ -295,6 +306,15 @@ def draw_jet_stream(origin, direction):
           * Seeker.radius * 0.3)
     l = Seeker.radius * (1 + math.exp(random.normalvariate(0.5, 0.2)))
     line(origin + t, origin + direction*l + t)
+
+def draw_scores():
+  global players
+  global screen
+  y = 10
+  for p in players:
+    screen.blit(font.render(str(p.score), False, p.color), (10, y))
+    screen.blit(p.name_image, (50, y))
+    y += 30
 
 
 def ai0(mySeekers, goals, otherPlayers):

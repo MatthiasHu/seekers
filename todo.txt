@@ -5,7 +5,6 @@
 * nicer graphics
 * respect torus-metric when checking for collisions
 * make collision logic fair (independent of order of seekers list)?
-* display scores
 * win condition
 * record outcomes, maintain a leaderboard?
 * separate game logic from things to be imported by ais?
