@@ -1,0 +1,12 @@
+* multiple players
+* how to import/load/communicate with the ais?
+* print warnings when ais return invalid data or produce exceptions
+* suppress ai stdout?
+* enforce bounds for ai running time?
+* nicer graphics
+* respect torus-metric when checking for collisions
+* display scores
+* win condition
+* record outcomes, maintain a leaderboard?
+* separate game logic from thing to be imperted by ais?
+* display target vectors (or jet streams?)
