@@ -4,9 +4,6 @@ import math
 import copy
 import random
 
-h = hashlib.md5(b"hi")
-print(h.hexdigest())
-
 
 screen = None
 quit = False
@@ -14,7 +11,7 @@ clock = None
 width = 768
 height = 768
 goals = []
-seekers = []
+players = []
 
 class Vector:
   def __init__(self, x=0, y=0):
@@ -44,8 +41,8 @@ class Vector:
 class Goal:
   radius = 15
 
-  def __init__(self, x, y):
-    self.position = Vector(x, y)
+  def __init__(self, position):
+    self.position = Vector(position.x, position.y)
 
 class Seeker:
   radius = 20
@@ -54,9 +51,9 @@ class Seeker:
   thrust = max_speed * friction
   disabled_time = 100
 
-  def __init__(self, x, y, vx=0, vy=0):
-    self.position = Vector(x, y)
-    self.velocity = Vector(vx, vy)
+  def __init__(self, position, velocity=Vector(0, 0)):
+    self.position = Vector(position.x, position.y)
+    self.velocity = Vector(velocity.x, velocity.y)
     self.target = self.position
     self.disabled_counter = 0
     self.normalize_position()
@@ -84,6 +81,49 @@ class Seeker:
   def disabled(self):
     return self.disabled_counter > 0
 
+class Player:
+  win_score = 100
+
+  def __init__(self, name, ai):
+    self.name = name
+    self.color = string_hash_color(name)
+    self.score = 0
+    self.seekers = []
+    self.ai = ai
+
+def all_seekers():
+  global players
+  seekers = []
+  for p in players:
+    for s in p.seekers:
+      seekers.append((p, s))
+  return seekers
+
+def string_hash_color(string):
+  original_state = random.getstate()
+  random.seed(string.encode())
+  hue = random.uniform(0, 1)
+  random.setstate(original_state)
+  return hue_color(hue)
+
+# make a nice color from a hue given as a number between 0 and 1
+def hue_color(hue):
+  colors = [
+      [255, 0, 0]
+    , [255, 255, 0]
+    , [0, 255, 0]
+    , [0, 255, 255]
+    , [0, 0, 255]
+    , [255, 0, 255]
+    , [255, 0, 0] ]
+  n = len(colors)
+  i = math.floor(hue*n)
+  i = min(i, n-1)
+  return interpolate_color(colors[i], colors[i+1], hue*n-i)
+
+def interpolate_color(c1, c2, t):
+  return [(1-t)*a + t*b for (a, b) in zip(c1, c2)]
+
 
 def start():
   global screen
@@ -92,18 +132,24 @@ def start():
   global width
   global height
   global goals
-  global seekers
+  global players
 
   pygame.init()
   screen = pygame.display.set_mode((width, height))
   clock = pygame.time.Clock()
 
   quit = False
-  goals = [random_goal() for _ in range(0, 3)]
-  seekers = [Seeker(223.5, 115, 5, 0), Seeker(40, 49, 0, -5), Seeker(-1, 333, 0, 0)]
+  # initialize goals
+  goals = [Goal(random_position()) for _ in range(0, 3)]
+  # initialize players (and their seekers)
+  players = []
+  players.append(Player("player0", ai0))
+  players.append(Player("player1", ai1))
+  players.append(Player("player2", ai2))
+  for p in players:
+    p.seekers = [Seeker(random_position()) for _ in range(0, 3)]
 
   main_loop()
-
 
 def main_loop():
   global quit
@@ -113,6 +159,7 @@ def main_loop():
     game_logic()
     draw()
     clock.tick(50)  # 20ms relative to last tick
+
 
 def handle_events():
   for e in pygame.event.get():
@@ -124,32 +171,39 @@ def handle_event(e):
     quit = True
 
 def call_ais():
-  call_ai(ai0)
+  global players
+  for p in players:
+    call_ai(p)
 
-def call_ai(ai):
-  global seekers
-  (own_seekers, goals, other_players) = prepareAIInput(None)
+def call_ai(player):
+  (own_seekers, goals, other_players) = prepareAIInput(player)
   new_seekers = []
   try:
-    new_seekers = ai(own_seekers, goals, other_players)
+    new_seekers = player.ai(own_seekers, goals, other_players)
   except Exception:
     pass
   if (isinstance(new_seekers, list)):
-    for i in range(0, min(len(new_seekers), len(seekers))):
-      if (isinstance(new_seekers[i], Seeker)):
-        if (isinstance(new_seekers[i].target, Vector)):
-          seekers[i].target = new_seekers[i].target
+    for (new, original) in zip(new_seekers, player.seekers):
+      if (isinstance(new, Seeker)):
+        if (isinstance(new.target, Vector)):
+          original.target = new.target
 
-def prepareAIInput(player_id):
-  global seekers
+def prepareAIInput(player):
+  global players
   global goals
-  return (copy.deepcopy(seekers), copy.deepcopy(goals), [])
+  i = players.index(player)
+  other_players = copy.deepcopy(players)
+  other_players.pop(i)
+  return (copy.deepcopy(player.seekers), copy.deepcopy(goals), other_players)
 
 def game_logic():
+  seekers = [s for (_, s) in all_seekers()]
+  # move and recover seekers
   for s in seekers:
     s.move()
-    if (s.disabled_counter>0):
+    if (s.disabled()):
       s.disabled_counter -= 1
+  # handle seeker collisions
   for i in range(0, len(seekers)):
     s = seekers[i]
     for j in range(i+1, len(seekers)):
@@ -158,6 +212,7 @@ def game_logic():
         s_copy = copy.deepcopy(s)
         seeker_collided(s, t)
         seeker_collided(t, s_copy)
+  # handle collisions of seekers with goals
   for s in seekers:
     if (not s.disabled()):
       for i in range(0, len(goals)):
@@ -180,22 +235,21 @@ def seeker_collided(s, t):
       s.position += dn * (ddn - Seeker.radius*2)
 
 def goal_scored(goal_index):
-  goals[goal_index] = random_goal()
+  goals[goal_index] = Goal(random_position())
 
-def random_goal():
-  return Goal(random.uniform(0, width), random.uniform(0, height))
+def random_position():
+  return Vector(random.uniform(0, width), random.uniform(0, height))
 
 def draw():
   global screen
   global goals
-  global seekers
-  screen.fill((0, 0, 0))
+  screen.fill([0, 0, 50])
   for g in goals:
     drawItem((255, 200, 0), g.position, Goal.radius)
-  for s in seekers:
-    color = (20, 200, 0)
+  for (p, s) in all_seekers():
+    color = p.color
     if (s.disabled()):
-      color = (10, 100, 0)
+      color = interpolate_color(color, [0, 0, 0], 0.5)
     drawItem(color, s.position, Seeker.radius)
   pygame.display.flip()
 
@@ -219,5 +273,16 @@ def ai0(mySeekers, goals, otherPlayers):
     s.target = neargoal.position
   return mySeekers
 
+def ai1(mySeekers, goals, otherPlayers):
+  # send every seeker to some goal
+  for (i, s) in enumerate(mySeekers):
+    s.target = goals[i % len(goals)].position
+  return mySeekers
+
+def ai2(mySeekers, goals, otherPlayers):
+  # send every seeker to the first goal
+  for (i, s) in enumerate(mySeekers):
+    s.target = goals[0].position
+  return mySeekers
 
 start()
