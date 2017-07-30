@@ -116,7 +116,7 @@ def hue_color(hue):
     , [0, 0, 255]
     , [255, 0, 255]
     , [255, 0, 0] ]
-  n = len(colors)
+  n = len(colors)-1
   i = math.floor(hue*n)
   i = min(i, n-1)
   return interpolate_color(colors[i], colors[i+1], hue*n-i)
