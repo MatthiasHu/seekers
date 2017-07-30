@@ -4,8 +4,9 @@
 * enforce bounds for ai running time?
 * nicer graphics
 * respect torus-metric when checking for collisions
+* make collision logic fair (independent of order of seekers list)?
 * display scores
 * win condition
 * record outcomes, maintain a leaderboard?
-* separate game logic from things to be imperted by ais?
-* display target vectors (or jet streams?)
+* separate game logic from things to be imported by ais?
+* adjust player colors to be distinguishable if needed

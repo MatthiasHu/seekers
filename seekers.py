@@ -22,6 +22,8 @@ class Vector:
     return Vector(left.x+right.x, left.y+right.y)
   def __sub__(left, right):
     return Vector(left.x-right.x, left.y-right.y)
+  def __neg__(self):
+    return self*(-1)
   def __mul__(self, factor):
     return Vector(self.x*factor, self.y*factor)
   def __truediv__(self, divisor):
@@ -37,6 +39,9 @@ class Vector:
       return Vector(0, 0)
     else:
       return Vector(self.x/norm, self.y/norm)
+
+  def rotated(self):
+    return Vector(-self.y, self.x)
 
 class Goal:
   radius = 15
@@ -137,6 +142,7 @@ def start():
   pygame.init()
   screen = pygame.display.set_mode((width, height))
   clock = pygame.time.Clock()
+  random.seed()
 
   quit = False
   # initialize goals
@@ -243,22 +249,52 @@ def random_position():
 def draw():
   global screen
   global goals
+  # clear screen
   screen.fill([0, 0, 50])
+  # draw goals
   for g in goals:
     drawItem((255, 200, 0), g.position, Goal.radius)
+  # draw jet streams
+  for (_, s) in all_seekers():
+    a = (s.target - s.position).normalized()
+    if (not s.disabled() and a.norm()>0):
+      draw_jet_stream(s.position, -a)
+  # draw seekers
   for (p, s) in all_seekers():
     color = p.color
     if (s.disabled()):
       color = interpolate_color(color, [0, 0, 0], 0.5)
     drawItem(color, s.position, Seeker.radius)
+  # actually update display
   pygame.display.flip()
 
 def drawItem(color, center, radius):
   global screen
+  global width
+  global height
   for ix in [-1, 0, 1]:
     for iy in [-1, 0, 1]:
       pygame.draw.circle(screen, color,
-        (int(center.x+ix*screen.get_rect().w), int(center.y+iy*screen.get_rect().h)), radius)
+        ( int(center.x+ix*width)
+        , int(center.y+iy*height) ), radius)
+
+def draw_jet_stream(origin, direction):
+  global screen
+  global width
+  global height
+
+  def line(a, b):
+    for ix in [-1, 0, 1]:
+      for iy in [-1, 0, 1]:
+        pygame.draw.line(screen, [255, 255, 255],
+            (int(a.x+ix*width), int(a.y+iy*height))
+          , (int(b.x+ix*width), int(b.y+iy*height)))
+
+  for _ in range(0, 2):
+    t = direction.rotated() * (random.uniform(-1, 1)
+          * Seeker.radius * 0.3)
+    l = Seeker.radius * (1 + math.exp(random.normalvariate(0.5, 0.2)))
+    line(origin + t, origin + direction*l + t)
 
 
 def ai0(mySeekers, goals, otherPlayers):
