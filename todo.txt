@@ -7,5 +7,4 @@
 * make collision logic fair (independent of order of seekers list)?
 * win condition
 * record outcomes, maintain a leaderboard?
-* separate game logic from things to be imported by ais?
 * adjust player colors to be distinguishable if needed
