@@ -5,6 +5,7 @@ import draw
 from ais import *
 
 import pygame
+import sys
 import copy
 import random
 
@@ -37,14 +38,20 @@ def start():
 
   # initialize goals
   goals = [Goal(random_position(world)) for _ in range(0, 3)]
-  # initialize players (and their seekers)
+
+  # find ais and initialize players
   players = []
-  players.append(Player("player0"))
-  players.append(Player("player1"))
-  players.append(Player("player2"))
-  for p in players:
-    p.seekers = [Seeker(random_position(world)) for _ in range(0, 3)]
-  ais = [ai0, ai1, ai2]
+  ais = []
+  ai_prefix = "ais."
+  for m in sys.modules:
+    if ( m[:len(ai_prefix)] == ai_prefix
+         and hasattr(sys.modules[m], "decide") ):
+      name = m[len(ai_prefix):]
+      p = Player(name)
+      p.seekers = [Seeker(random_position(world)) for _ in range(0, 3)]
+      players.append(p)
+      ais.append(sys.modules[m].decide)
+
   # prepare graphics
   draw.init(players)
 
