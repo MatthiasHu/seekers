@@ -55,6 +55,14 @@ class Seeker:
   def disabled(self):
     return self.disabled_counter > 0
 
+class ScoreAnimation:
+  duration = 20
+
+  def __init__(self, position, color):
+    self.position = position
+    self.age = 0
+    self.color = color
+
 class Player:
   win_score = 100
 

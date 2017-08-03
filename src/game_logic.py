@@ -4,7 +4,7 @@ import random
 import copy
 
 
-def tick(players, goals, world):
+def tick(players, goals, animations, world):
   seekers = [s for p in players for s in p.seekers]
   # move and recover seekers
   for s in seekers:
@@ -27,7 +27,13 @@ def tick(players, goals, world):
         for i in range(0, len(goals)):
           d = (goals[i].position - s.position).norm()
           if d < Seeker.radius + Goal.radius:
-            goal_scored(p, i, goals, world)
+            goal_scored(p, i, goals, animations, world)
+  # advance animations
+  for _, animation_list in animations.items():
+    for (i, a) in enumerate(animation_list):
+      a.age += 1
+      if a.age > a.duration:
+        animation_list.pop(i)
 
 def move_seeker(s, world):
   # friction
@@ -58,9 +64,11 @@ def seeker_collided(s, t):
     if (ddn < Seeker.radius*2):
       s.position += dn * (ddn - Seeker.radius*2)
 
-def goal_scored(player, goal_index, goals, world):
+def goal_scored(player, goal_index, goals, animations, world):
   player.score += 1
+  g = goals[goal_index]
   goals[goal_index] = Goal(random_position(world))
+  animations["score"].append(ScoreAnimation(g.position, player.color))
 
 def random_position(world):
   return Vector(random.uniform(0, world.width)

@@ -18,7 +18,7 @@ def init(players):
     player_name_images[p.name] = font.render(p.name, True, p.color)
     
 
-def draw(players, goals, world, screen):
+def draw(players, goals, animations, world, screen):
   # clear screen
   screen.fill([0, 0, 30])
   # draw goals
@@ -37,31 +37,45 @@ def draw(players, goals, world, screen):
       if (s.disabled()):
         color = interpolate_color(color, [0, 0, 0], 0.5)
       draw_item(color, s.position, Seeker.radius, world, screen)
+  # draw animations
+  for a in animations["score"]:
+    draw_score_animation(a, world, screen)
   # draw player's scores
   draw_scores(players, screen)
   # actually update display
   pygame.display.flip()
 
 def draw_item(color, center, radius, world, screen):
-  for ix in [-1, 0, 1]:
-    for iy in [-1, 0, 1]:
-      pygame.draw.circle(screen, color,
-        ( int(center.x+ix*world.width)
-        , int(center.y+iy*world.height) ), radius)
+  for (dx, dy) in repetition_offsets(world):
+    pygame.draw.circle(screen, color,
+      (int(center.x+dx), int(center.y+dy)), radius)
 
 def draw_jet_stream(origin, direction, world, screen):
   def line(a, b):
-    for ix in [-1, 0, 1]:
-      for iy in [-1, 0, 1]:
-        pygame.draw.line(screen, [255, 255, 255],
-            (int(a.x+ix*world.width), int(a.y+iy*world.height))
-          , (int(b.x+ix*world.width), int(b.y+iy*world.height)))
+    for (dx, dy) in repetition_offsets(world):
+      pygame.draw.line(screen, [255, 255, 255],
+          (int(a.x+dx), int(a.y+dy))
+        , (int(b.x+dx), int(b.y+dy)))
 
   for _ in range(0, 2):
     t = direction.rotated() * (random.uniform(-1, 1)
           * Seeker.radius * 0.3)
     l = Seeker.radius * (1 + math.exp(random.normalvariate(0.5, 0.2)))
     line(origin + t, origin + direction*l + t)
+
+def draw_score_animation(a, world, screen):
+  t = a.age / a.duration
+  r = Goal.radius + 100*t
+  for (dx, dy) in repetition_offsets(world):
+    pygame.draw.circle(screen, a.color,
+      (int(a.position.x+dx), int(a.position.y+dy)), int(r), 1)
+
+def repetition_offsets(world):
+  l = []
+  for ix in [-1, 0, 1]:
+    for iy in [-1, 0, 1]:
+      l.append((ix*world.width, iy*world.height))
+  return l
 
 def draw_scores(players, screen):
   global name_images

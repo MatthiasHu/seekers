@@ -18,6 +18,7 @@ world = World(768, 768)
 goals = []
 players = []
 ais = []
+animations = {"score": []}
 
 
 def start():
@@ -56,14 +57,15 @@ def main_loop():
   global players
   global goals
   global world
+  global animations
   global screen
 
   while not quit:
     handle_events()
     for _ in range(speedup_factor):
       call_ais()
-      game_logic.tick(players, goals, world)
-    draw.draw(players, goals, world, screen)
+      game_logic.tick(players, goals, animations, world)
+    draw.draw(players, goals, animations, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
 
