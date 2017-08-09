@@ -88,20 +88,20 @@ def handle_event(e):
 def call_ais():
   global players
   global ais
-  for i in range(0, len(players)):
-    call_ai(players[i], ais[i])
+  for player,ai in zip(players,ais):
+    call_ai(player,ai)
 
 def call_ai(player, ai):
-  (own_seekers, goals, other_players) = prepare_ai_input(player)
+  own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = []
   try:
     new_seekers = ai(own_seekers, goals, other_players)
   except Exception:
     pass
-  if (isinstance(new_seekers, list)):
-    for (new, original) in zip(new_seekers, player.seekers):
-      if (isinstance(new, Seeker)):
-        if (isinstance(new.target, Vector)):
+  if isinstance(new_seekers, list):
+    for new, original in zip(new_seekers, player.seekers):
+      if isinstance(new, Seeker):
+        if isinstance(new.target, Vector):
           original.target = new.target
 
 def prepare_ai_input(player):
@@ -112,7 +112,7 @@ def prepare_ai_input(player):
   other_players.pop(i)
   return ( copy.deepcopy(player.seekers)
          , copy.deepcopy(goals)
-         , other_players)
+         , other_players )
 
 
 start()

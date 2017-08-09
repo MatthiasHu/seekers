@@ -34,7 +34,7 @@ def draw(players, goals, animations, world, screen):
   for p in players:
     for s in p.seekers:
       color = p.color
-      if (s.disabled()):
+      if s.disabled():
         color = interpolate_color(color, [0, 0, 0], 0.5)
       draw_item(color, s.position, Seeker.radius, world, screen)
   # draw animations
@@ -52,7 +52,7 @@ def draw_item(color, center, radius, world, screen):
 
 def draw_jet_stream(origin, direction, world, screen):
   def line(a, b):
-    for (dx, dy) in repetition_offsets(world):
+    for dx, dy in repetition_offsets(world):
       pygame.draw.line(screen, [255, 255, 255],
           (int(a.x+dx), int(a.y+dy))
         , (int(b.x+dx), int(b.y+dy)))
@@ -66,7 +66,7 @@ def draw_jet_stream(origin, direction, world, screen):
 def draw_score_animation(a, world, screen):
   t = a.age / a.duration
   r = Goal.radius + 100*t
-  for (dx, dy) in repetition_offsets(world):
+  for dx, dy in repetition_offsets(world):
     pygame.draw.circle(screen, a.color,
       (int(a.position.x+dx), int(a.position.y+dy)), int(r), 1)
 

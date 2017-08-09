@@ -26,5 +26,5 @@ def hue_color(hue):
   return interpolate_color(colors[i], colors[i+1], hue*n-i)
 
 def interpolate_color(c1, c2, t):
-  return [(1-t)*a + t*b for (a, b) in zip(c1, c2)]
+  return [(1-t)*a + t*b for a, b in zip(c1, c2)]
 
