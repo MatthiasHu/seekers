@@ -22,8 +22,8 @@ def tick(players, goals, animations, world):
         seeker_collided(s, t)
         seeker_collided(t, s_copy)
   # handle collisions of seekers with goals
-  for p in players:
-    for s in p.seekers:
+  for p in shuffled(players):
+    for s in shuffled(p.seekers):
       if not s.disabled():
         for i in range(0, len(goals)):
           d = world.torus_distance(goals[i].position,s.position)
@@ -35,6 +35,13 @@ def tick(players, goals, animations, world):
       a.age += 1
       if a.age > a.duration:
         animation_list.pop(i)
+
+
+def shuffled(xs):
+  ys = copy.copy(xs)
+  random.shuffle(ys)
+  return ys
+
 
 def move_seeker(s, world):
   # friction
