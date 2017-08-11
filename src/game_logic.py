@@ -16,7 +16,8 @@ def tick(players, goals, animations, world):
     s = seekers[i]
     for j in range(i+1, len(seekers)):
       t = seekers[j]
-      if (t.position - s.position).norm() < Seeker.radius*2:
+      d = world.torus_distance(t.position,s.position)
+      if d < Seeker.radius*2:
         s_copy = copy.deepcopy(s)
         seeker_collided(s, t)
         seeker_collided(t, s_copy)
@@ -25,7 +26,7 @@ def tick(players, goals, animations, world):
     for s in p.seekers:
       if not s.disabled():
         for i in range(0, len(goals)):
-          d = (goals[i].position - s.position).norm()
+          d = world.torus_distance(goals[i].position,s.position)
           if d < Seeker.radius + Goal.radius:
             goal_scored(p, i, goals, animations, world)
   # advance animations
