@@ -3,6 +3,8 @@ import game_logic
 from game_logic import random_position
 import draw
 from ais import *
+import sys
+import os
 
 import pygame
 import sys
@@ -91,20 +93,27 @@ def call_ais():
   for player,ai in zip(players,ais):
     call_ai(player,ai)
 
+
 def call_ai(player, ai):
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = []
+  sys.stdout = NullDevice()
   try:
     new_seekers = ai(own_seekers, goals, other_players)
   except Exception as e:
-      print(  "The AI of Player "
+    sys.stdout = sys.__stdout__
+    print(  "The AI of Player "
             + player.name
             + " raised an exception." )
+  sys.stdout = sys.__stdout__
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
         if isinstance(new.target, Vector):
           original.target = new.target
+
+class NullDevice():
+  def write(self,s): pass
 
 def prepare_ai_input(player):
   global players
