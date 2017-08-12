@@ -97,15 +97,15 @@ def call_ais():
 def call_ai(player, ai):
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = []
-  sys.stdout = NullDevice()
+  block_stdio()
   try:
     new_seekers = ai(own_seekers, goals, other_players)
   except Exception as e:
-    sys.stdout = sys.__stdout__
+    restore_stdio()
     print(  "The AI of Player "
             + player.name
             + " raised an exception." )
-  sys.stdout = sys.__stdout__
+  restore_stdio()
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
@@ -114,6 +114,14 @@ def call_ai(player, ai):
 
 class NullDevice():
   def write(self,s): pass
+
+def block_stdio():
+  sys.stdout = NullDevice()
+  sys.stderr = NullDevice()
+
+def restore_stdio():
+  sys.stdout = sys.__stdout__
+  sys.stderr = sys.__stderr__
 
 def prepare_ai_input(player):
   global players
