@@ -96,8 +96,10 @@ def call_ai(player, ai):
   new_seekers = []
   try:
     new_seekers = ai(own_seekers, goals, other_players)
-  except Exception:
-    pass
+  except Exception as e:
+      print(  "The AI of Player "
+            + player.name
+            + " raised an exception." )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
