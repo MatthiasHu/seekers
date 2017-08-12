@@ -96,21 +96,26 @@ def call_ais():
 
 def call_ai(player, ai):
   own_seekers, goals, other_players = prepare_ai_input(player)
-  new_seekers = []
-  block_stdio()
-  try:
-    new_seekers = ai(own_seekers, goals, other_players)
-  except Exception as e:
-    restore_stdio()
-    print(  "The AI of Player "
-            + player.name
-            + " raised an exception." )
-  restore_stdio()
+  new_seekers = sandboxed_ai_call( player
+          , lambda: ai(own_seekers, goals, other_players) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
         if isinstance(new.target, Vector):
           original.target = new.target
+
+def sandboxed_ai_call(player, ai_call):
+  block_stdio()
+  try:
+    res = ai_call()
+  except Exception as e:
+    restore_stdio()
+    print(  "The AI of Player "
+            + player.name
+            + " raised an exception." )
+    return []
+  restore_stdio()
+  return res
 
 class NullDevice():
   def write(self,s): pass
