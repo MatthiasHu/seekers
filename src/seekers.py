@@ -95,14 +95,21 @@ def call_ais():
 
 
 def call_ai(player, ai):
+  def warn_invalid_data():
+    print( "The AI of Player "
+         + player.name
+         + " returned invalid data" )
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = sandboxed_ai_call( player
           , lambda: ai(own_seekers, goals, other_players) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
-      if isinstance(new, Seeker):
-        if isinstance(new.target, Vector):
-          original.target = new.target
+      if isinstance(new, Seeker) and isinstance(new.target, Vector):
+        original.target = new.target
+      else:
+        warn_invalid_data()
+  else:
+    warn_invalid_data()
 
 def sandboxed_ai_call(player, ai_call):
   block_stdio()
