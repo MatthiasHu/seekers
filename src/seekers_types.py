@@ -87,6 +87,9 @@ class World:
   def size_vector(self):
     return Vector(self.width,self.height)
 
+  def diameter(self):
+    return self.size_vector().norm()
+
   def torus_distance(self,left,right):
     def dist1d(l,a,b):
       delta = abs(a-b)
@@ -94,6 +97,11 @@ class World:
     return Vector( dist1d(self.width,right.x,left.x)
                  , dist1d(self.height,right.y,left.y) ).norm()
 
-
+  def torus_direction(self,left,right):
+    def dir1d(l,a,b):
+      delta = abs(a-b)
+      return b-a if delta < l-delta else a-b
+    return Vector( dir1d(self.width,right.x,left.x)
+                 , dir1d(self.height,right.y,left.y) ).normalized()
 
 

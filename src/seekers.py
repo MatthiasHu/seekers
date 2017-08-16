@@ -90,18 +90,19 @@ def handle_event(e):
 def call_ais():
   global players
   global ais
+  global world
   for player,ai in zip(players,ais):
-    call_ai(player,ai)
+    call_ai(player,ai,copy.deepcopy(world))
 
 
-def call_ai(player, ai):
+def call_ai(player, ai,world):
   def warn_invalid_data():
     print( "The AI of Player "
          + player.name
          + " returned invalid data" )
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = sandboxed_ai_call( player
-          , lambda: ai(own_seekers, goals, other_players) )
+          , lambda: ai(own_seekers, goals, other_players, world) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker) and isinstance(new.target, Vector):
@@ -119,7 +120,8 @@ def sandboxed_ai_call(player, ai_call):
     restore_stdio()
     print(  "The AI of Player "
             + player.name
-            + " raised an exception." )
+            + " raised an exception:" )
+    print(e)
     return []
   restore_stdio()
   return res
