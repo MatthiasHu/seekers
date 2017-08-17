@@ -130,6 +130,15 @@ class Seeker(Physical):
     b = self.magnet_slowdown if self.magnet.is_on() else 1
     return Physical.thrust(self) * b
 
+  def copy_alterables(src,dest):
+    for attr,is_valid in Seeker.alterables:
+      fallback = getattr(dest,attr)
+      val = getattr(src,attr,fallback)
+      if is_valid(val):
+        setattr(dest,attr,val)
+      else: return False
+    return True
+
   def set_magnet_repulsive(self):
     self.magnet.set_respulsive()
 
@@ -190,5 +199,9 @@ class World:
       return b-a if delta < l-delta else a-b
     return Vector( dir1d(self.width,right.x,left.x)
                  , dir1d(self.height,right.y,left.y) ).normalized()
+
+  def random_position(self):
+    return Vector( random.uniform(0, self.width)
+                 , random.uniform(0, self.height) )
 
 

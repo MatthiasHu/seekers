@@ -2,6 +2,7 @@ from seekers_types import *
 
 import random
 import copy
+import utils
 
 
 def tick(players, goals, animations, world):
@@ -29,8 +30,8 @@ def tick(players, goals, animations, world):
         seeker_collided(s, t)
         seeker_collided(t, s_copy)
   # handle collisions of seekers with goals
-  for p in shuffled(players):
-    for s in shuffled(p.seekers):
+  for p in utils.shuffled(players):
+    for s in utils.shuffled(p.seekers):
       if not s.disabled():
         for i in range(0, len(goals)):
           d = world.torus_distance(goals[i].position,s.position)
@@ -42,11 +43,6 @@ def tick(players, goals, animations, world):
       a.age += 1
       if a.age > a.duration:
         animation_list.pop(i)
-
-def shuffled(xs):
-  ys = copy.copy(xs)
-  random.shuffle(ys)
-  return ys
 
 
 def seeker_collided(s, t):
@@ -67,9 +63,8 @@ def seeker_collided(s, t):
 def goal_scored(player, goal_index, goals, animations, world):
   player.score += 1
   g = goals[goal_index]
-  goals[goal_index] = Goal(random_position(world))
+  goals[goal_index] = Goal(world.random_position())
   animations["score"].append(ScoreAnimation(g.position, player.color))
 
-def random_position(world):
-  return Vector(random.uniform(0, world.width)
-               ,random.uniform(0, world.height))
+
+
