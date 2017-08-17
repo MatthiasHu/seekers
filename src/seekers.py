@@ -6,6 +6,7 @@ import os
 import os.path
 import glob
 import imp
+import traceback
 
 import pygame
 import sys
@@ -57,13 +58,24 @@ def load_ais():
   global players
   global ais
 
-  for f in glob.glob("ai*.py"):
-    name = f[:-3]
+  for filename in glob.glob("ai*.py"):
+    name = filename[:-3]
     p    = Player(name)
-    ai   = imp.load_source(name, f).decide
-    ai.timestamp = os.path.getctime(f)
+    ai   = load_ai(filename)
     players.append(p)
     ais.append(ai)
+
+def load_ai(filename):
+  try:
+    ai = imp.load_source(filename[:-3], filename).decide
+  except Exception:
+    print("******************************************", file=sys.stderr)
+    traceback.print_exc(file=sys.stderr)
+    print("", file=sys.stderr)
+    ai = lambda mySeekers, goals, otherPlayers, world: mySeekers
+  ai.filename  = filename
+  ai.timestamp = os.path.getctime(filename)
+  return ai
 
 def reset():
   global players
@@ -88,7 +100,6 @@ def main_loop():
     draw.draw(players, goals, animations, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
-
 def handle_events():
   for e in pygame.event.get():
     handle_event(e)
@@ -102,9 +113,11 @@ def call_ais():
   global players
   global ais
   global world
-  for player,ai in zip(players,ais):
-    call_ai(player,ai,copy.deepcopy(world))
 
+  for i in range(len(players)):
+    if os.path.getctime(ais[i].filename) > ais[i].timestamp:
+      ais[i] = load_ai(ais[i].filename)
+    call_ai(players[i],ais[i],copy.deepcopy(world))
 
 def call_ai(player, ai,world):
   def warn_invalid_data():
