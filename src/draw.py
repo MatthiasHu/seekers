@@ -18,7 +18,7 @@ def init(players):
     player_name_images[p.name] = font.render(p.name, True, p.color)
     
 
-def draw(players, goals, animations, world, screen):
+def draw(players, camps, goals, animations, world, screen):
   # clear screen
   screen.fill([0, 0, 30])
   # draw goals

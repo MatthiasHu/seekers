@@ -67,6 +67,7 @@ def main_loop():
   global speedup_factor
   global quit
   global players
+  global camps
   global goals
   global world
   global animations
@@ -76,8 +77,8 @@ def main_loop():
     handle_events()
     for _ in range(speedup_factor):
       call_ais()
-      game_logic.tick(players, goals, animations, world)
-    draw.draw(players, goals, animations, world, screen)
+      game_logic.tick(players, camps, goals, animations, world)
+    draw.draw(players, camps, goals, animations, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
 
@@ -92,20 +93,23 @@ def handle_event(e):
 
 def call_ais():
   global players
+  global camps
   global ais
   global world
   for player,ai in zip(players,ais):
-    call_ai(player,ai,copy.deepcopy(world))
+    call_ai( player, ai
+           , copy.deepcopy(camps)
+           , copy.deepcopy(world) )
 
 
-def call_ai(player, ai,world):
+def call_ai(player, ai, camps, world):
   def warn_invalid_data():
     print( "The AI of Player "
          + player.name
          + " returned invalid data" )
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = sandboxed_ai_call( player
-          , lambda: ai(own_seekers, goals, other_players, world) )
+          , lambda: ai(own_seekers, goals, other_players, camps, world) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):

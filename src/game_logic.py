@@ -5,7 +5,7 @@ import copy
 import utils
 
 
-def tick(players, goals, animations, world):
+def tick(players, camps, goals, animations, world):
   seekers = [s for p in players for s in p.seekers]
   # move and recover seekers
   for s in seekers:

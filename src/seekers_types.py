@@ -227,16 +227,19 @@ class World:
   def random_position(self):
     return Vector( random.uniform(0, self.width)
                  , random.uniform(0, self.height) )
-  
-  def generate_camps(self, players):
-    n = len(players)
+ 
+  def gen_camp(self, n, i, player):
     r = self.diameter() / 4
     width = r / 6
     height = r / 6
-    camp_pos = lambda i: utils.circle(r, 2 * math.pi * i / n)
-    positions = utils.fmap(camp_pos, range(n))
-    for player,pos in zip(players,positions):
-      yield Camp(player, pos, width, height)
+    theta = lambda i: 2 * math.pi * i / n
+    pos = r * Vector( math.sin(theta(i))
+                    , math.cos(theta(i)) )
+    return Camp(player, pos, width, height )
+
+  def generate_camps(self, players):
+    n = len(players)
+    return [ self.gen_camp(n, i, p) for i,p in enumerate(players) ] 
 
 class Camp:
 

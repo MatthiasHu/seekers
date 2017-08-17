@@ -1,6 +1,6 @@
 from seekers_types import *
 
-def decide(mySeekers, goals, otherPlayers, world):
+def decide(mySeekers, goals, otherPlayers, camps, world):
   # send every seeker to the nearest goal
   for s in mySeekers:
     dist = 10000
