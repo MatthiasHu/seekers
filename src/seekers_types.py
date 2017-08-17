@@ -136,8 +136,8 @@ class Seeker(Physical):
       val = getattr(src,attr,fallback)
       if is_valid(val):
         setattr(dest,attr,val)
-        return True
       else: return False
+    return True
 
   def set_magnet_repulsive(self):
     self.magnet.set_respulsive()
