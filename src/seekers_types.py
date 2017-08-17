@@ -70,6 +70,21 @@ class Physical:
   def thrust(self):
     return self.base_thrust
 
+  def collision(s, t, min_dist):
+    # elastic collision
+    d = t.position - s.position
+    if d.norm() != 0:
+      dn = d.normalized()
+      dv = t.velocity - s.velocity
+      dvdn = dv.dot(dn)
+      if dvdn < 0:
+        s.velocity += dn * dvdn
+        t.velocity -= dn * dvdn
+      ddn = d.dot(dn)
+      if ddn < min_dist:
+        s.position += dn * (ddn - min_dist)
+        t.position -= dn * (ddn - min_dist)
+
 
 class Goal(Physical):
   radius = 15
@@ -130,7 +145,12 @@ class Seeker(Physical):
     b = self.magnet_slowdown if self.magnet.is_on() else 1
     return Physical.thrust(self) * b
 
-  def copy_alterables(src,dest):
+  def collision(s, t, min_dist):
+    s.disabled_counter = Seeker.disabled_time
+    t.disabled_counter = Seeker.disabled_time
+    Physical.collision(s, t, min_dist)
+
+  def copy_alterables(src, dest):
     for attr,is_valid in Seeker.alterables:
       fallback = getattr(dest,attr)
       val = getattr(src,attr,fallback)
