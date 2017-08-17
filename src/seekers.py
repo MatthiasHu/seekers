@@ -66,15 +66,23 @@ def load_ais():
     ais.append(ai)
 
 def load_ai(filename):
+  def dummy_decide(mySeekers, goals, otherPlayers, world):
+    for s in mySeekers:
+      s.target = s.position
+    return mySeekers
+
   try:
     ai = imp.load_source(filename[:-3], filename).decide
   except Exception:
     print("******************************************", file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
     print("", file=sys.stderr)
-    ai = lambda mySeekers, goals, otherPlayers, world: mySeekers
+
+    ai = dummy_decide
+
   ai.filename  = filename
   ai.timestamp = os.path.getctime(filename)
+
   return ai
 
 def reset():
