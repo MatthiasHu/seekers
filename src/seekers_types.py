@@ -130,6 +130,15 @@ class Seeker(Physical):
     b = self.magnet_slowdown if self.magnet.is_on() else 1
     return Physical.thrust(self) * b
 
+  def copy_alterables(src,dest):
+    for attr,is_valid in Seeker.alterables:
+      fallback = getattr(dest,attr)
+      val = getattr(src,attr,fallback)
+      if is_valid(val):
+        setattr(dest,attr,val)
+        return True
+      else: return False
+
   def set_magnet_repulsive(self):
     self.magnet.set_respulsive()
 

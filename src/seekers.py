@@ -104,17 +104,10 @@ def call_ai(player, ai,world):
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
-        for attr,is_valid in Seeker.alterables:
-          fallback = getattr(original,attr)
-          val = getattr(new,attr,fallback)
-          if is_valid(val):
-            setattr(original,attr,val)
-          else:
-            warn_invalid_data()
-      else:
-        warn_invalid_data()
-  else:
-    warn_invalid_data()
+        status = Seeker.copy_alterables(new,original)
+        if not status: warn_invalid_data()
+      else: warn_invalid_data()
+  else: warn_invalid_data()
 
 def sandboxed_ai_call(player, ai_call):
   block_stdio()
