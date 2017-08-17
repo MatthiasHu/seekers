@@ -63,9 +63,8 @@ def seeker_collided(s, t):
 def goal_scored(player, goal_index, goals, animations, world):
   player.score += 1
   g = goals[goal_index]
-  goals[goal_index] = Goal(random_position(world))
+  goals[goal_index] = Goal(world.random_position())
   animations["score"].append(ScoreAnimation(g.position, player.color))
 
-def random_position(world):
-  return Vector(random.uniform(0, world.width)
-               ,random.uniform(0, world.height))
+
+

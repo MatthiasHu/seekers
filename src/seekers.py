@@ -1,6 +1,5 @@
 from seekers_types import *
 import game_logic
-from game_logic import random_position
 import draw
 from ais import *
 import sys
@@ -38,7 +37,7 @@ def start():
   random.seed()
 
   # initialize goals
-  goals = [Goal(random_position(world)) for _ in range(0, 3)]
+  goals = [Goal(world.random_position()) for _ in range(0, 3)]
 
   # find ais and initialize players
   players = []
@@ -49,7 +48,7 @@ def start():
          and hasattr(sys.modules[m], "decide") ):
       name = m[len(ai_prefix):]
       p = Player(name)
-      p.seekers = [Seeker(random_position(world)) for _ in range(0, 3)]
+      p.seekers = [Seeker(world.random_position()) for _ in range(0, 3)]
       players.append(p)
       ais.append(sys.modules[m].decide)
 

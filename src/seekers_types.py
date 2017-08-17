@@ -191,4 +191,8 @@ class World:
     return Vector( dir1d(self.width,right.x,left.x)
                  , dir1d(self.height,right.y,left.y) ).normalized()
 
+  def random_position(self):
+    return Vector( random.uniform(0, self.width)
+                 , random.uniform(0, self.height) )
+
 
