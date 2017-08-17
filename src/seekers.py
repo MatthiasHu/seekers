@@ -58,12 +58,13 @@ def load_ais():
   global players
   global ais
 
-  for filename in glob.glob("ai*.py"):
-    name = filename[:-3]
-    p    = Player(name)
-    ai   = load_ai(filename)
-    players.append(p)
-    ais.append(ai)
+  for search_path in ("", "./src/ais/"):
+    for filename in glob.glob(search_path + "ai*.py"):
+      name = filename[:-3]
+      p    = Player(name)
+      ai   = load_ai(filename)
+      players.append(p)
+      ais.append(ai)
 
 def load_ai(filename):
   def dummy_decide(mySeekers, goals, otherPlayers, world):
