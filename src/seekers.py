@@ -1,9 +1,11 @@
 from seekers_types import *
 import game_logic
 import draw
-from ais import *
 import sys
 import os
+import os.path
+import glob
+import imp
 
 import pygame
 import sys
@@ -42,21 +44,32 @@ def start():
   # find ais and initialize players
   players = []
   ais = []
-  ai_prefix = "ais."
-  for m in sys.modules:
-    if ( m[:len(ai_prefix)] == ai_prefix
-         and hasattr(sys.modules[m], "decide") ):
-      name = m[len(ai_prefix):]
-      p = Player(name)
-      p.seekers = [Seeker(world.random_position()) for _ in range(0, 3)]
-      players.append(p)
-      ais.append(sys.modules[m].decide)
+  load_ais()
+  reset()
 
   # prepare graphics
   draw.init(players)
 
   quit = False
   main_loop()
+
+def load_ais():
+  global players
+  global ais
+
+  for f in glob.glob("ai*.py"):
+    name = f[:-3]
+    p    = Player(name)
+    ai   = imp.load_source(name, f).decide
+    ai.timestamp = os.path.getctime(f)
+    players.append(p)
+    ais.append(ai)
+
+def reset():
+  global players
+
+  for p in players:
+    p.seekers = [Seeker(world.random_position()) for _ in range(0, 3)]
 
 def main_loop():
   global speedup_factor
