@@ -3,6 +3,8 @@ import game_logic
 from game_logic import random_position
 import draw
 from ais import *
+import sys
+import os
 
 import pygame
 import sys
@@ -88,21 +90,52 @@ def handle_event(e):
 def call_ais():
   global players
   global ais
-  for i in range(0, len(players)):
-    call_ai(players[i], ais[i])
+  global world
+  for player,ai in zip(players,ais):
+    call_ai(player,ai,copy.deepcopy(world))
 
-def call_ai(player, ai):
-  (own_seekers, goals, other_players) = prepare_ai_input(player)
-  new_seekers = []
+
+def call_ai(player, ai,world):
+  def warn_invalid_data():
+    print( "The AI of Player "
+         + player.name
+         + " returned invalid data" )
+  own_seekers, goals, other_players = prepare_ai_input(player)
+  new_seekers = sandboxed_ai_call( player
+          , lambda: ai(own_seekers, goals, other_players, world) )
+  if isinstance(new_seekers, list):
+    for new, original in zip(new_seekers, player.seekers):
+      if isinstance(new, Seeker) and isinstance(new.target, Vector):
+        original.target = new.target
+      else:
+        warn_invalid_data()
+  else:
+    warn_invalid_data()
+
+def sandboxed_ai_call(player, ai_call):
+  block_stdio()
   try:
-    new_seekers = ai(own_seekers, goals, other_players)
-  except Exception:
-    pass
-  if (isinstance(new_seekers, list)):
-    for (new, original) in zip(new_seekers, player.seekers):
-      if (isinstance(new, Seeker)):
-        if (isinstance(new.target, Vector)):
-          original.target = new.target
+    res = ai_call()
+  except Exception as e:
+    restore_stdio()
+    print(  "The AI of Player "
+            + player.name
+            + " raised an exception:" )
+    print(e)
+    return []
+  restore_stdio()
+  return res
+
+class NullDevice():
+  def write(self,s): pass
+
+def block_stdio():
+  sys.stdout = NullDevice()
+  sys.stderr = NullDevice()
+
+def restore_stdio():
+  sys.stdout = sys.__stdout__
+  sys.stderr = sys.__stderr__
 
 def prepare_ai_input(player):
   global players
@@ -112,7 +145,7 @@ def prepare_ai_input(player):
   other_players.pop(i)
   return ( copy.deepcopy(player.seekers)
          , copy.deepcopy(goals)
-         , other_players)
+         , other_players )
 
 
 start()

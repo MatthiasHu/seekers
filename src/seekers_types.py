@@ -32,6 +32,9 @@ class Vector:
 
   def rotated(self):
     return Vector(-self.y, self.x)
+      
+  def fmap(self, f):
+    return Vector(f(self.x),f(self.y))
 
 class Goal:
   radius = 15
@@ -80,3 +83,25 @@ class World:
   def normalize_position(self, pos):
     pos.x -= math.floor(pos.x/self.width)*self.width
     pos.y -= math.floor(pos.y/self.height)*self.height
+
+  def size_vector(self):
+    return Vector(self.width,self.height)
+
+  def diameter(self):
+    return self.size_vector().norm()
+
+  def torus_distance(self,left,right):
+    def dist1d(l,a,b):
+      delta = abs(a-b)
+      return min(delta,l-delta)
+    return Vector( dist1d(self.width,right.x,left.x)
+                 , dist1d(self.height,right.y,left.y) ).norm()
+
+  def torus_direction(self,left,right):
+    def dir1d(l,a,b):
+      delta = abs(a-b)
+      return b-a if delta < l-delta else a-b
+    return Vector( dir1d(self.width,right.x,left.x)
+                 , dir1d(self.height,right.y,left.y) ).normalized()
+
+
