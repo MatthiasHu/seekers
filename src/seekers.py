@@ -105,8 +105,11 @@ def call_ai(player, ai,world):
           , lambda: ai(own_seekers, goals, other_players, world) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
-      if isinstance(new, Seeker) and isinstance(new.target, Vector):
-        original.target = new.target
+      if isinstance(new, Seeker):
+        if isinstance(new.target, Vector):
+          original.target = new.target
+        if isinstance(new.magnetic_field,int) and 1 >= new.magnetic_field >= -1:
+          original.magnetic_field = new.magnetic_field
       else:
         warn_invalid_data()
   else:

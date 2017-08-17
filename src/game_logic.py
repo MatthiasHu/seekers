@@ -8,9 +8,16 @@ def tick(players, goals, animations, world):
   seekers = [s for p in players for s in p.seekers]
   # move and recover seekers
   for s in seekers:
-    move_seeker(s, world)
+    s.move(world)
     if s.disabled():
       s.disabled_counter -= 1
+  # compute magnetic forces and move goals
+  for g in goals:
+    force = Vector(0,0)
+    for s in seekers:
+      force += s.magnetic_force(world,g.position)
+    g.acceleration = force
+    g.move(world)
   # handle seeker collisions
   for i in range(0, len(seekers)):
     s = seekers[i]
@@ -36,26 +43,11 @@ def tick(players, goals, animations, world):
       if a.age > a.duration:
         animation_list.pop(i)
 
-
 def shuffled(xs):
   ys = copy.copy(xs)
   random.shuffle(ys)
   return ys
 
-
-def move_seeker(s, world):
-  # friction
-  s.velocity.x *= 1-Seeker.friction
-  s.velocity.y *= 1-Seeker.friction
-  # acceleration
-  if not s.disabled_counter>0:
-    a = (s.target - s.position).normalized()
-    s.velocity.x += a.x*Seeker.thrust
-    s.velocity.y += a.y*Seeker.thrust
-  # displacement
-  s.position.x += s.velocity.x
-  s.position.y += s.velocity.y
-  world.normalize_position(s.position)
 
 def seeker_collided(s, t):
   # disable the seeker
