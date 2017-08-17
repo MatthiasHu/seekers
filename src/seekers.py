@@ -77,9 +77,24 @@ def load_ai(filename):
       s.target = s.position
     return mySeekers
 
+  def mogrify(code):
+    if code.startswith("#bot"):
+      lines = code.split("\n")
+      lines[0] = "def decide(seekers, goals, otherPlayers, world):"
+      for i in range(1,len(lines)):
+        lines[i] = " " + lines[i]
+      lines.append(" return seekers")
+      return "\n".join(lines)
+    else:
+      return code
+
   try:
-    ai = imp.load_source(filename[:-3], filename).decide
-    ai.is_dummy = False
+    with open(filename, "r") as f:
+      code = mogrify(f.read())
+      mod  = imp.new_module(filename[:-3])
+      exec(code, mod.__dict__)
+      ai = mod.decide
+      ai.is_dummy = False
   except Exception:
     print("**********************************************************", file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
@@ -153,7 +168,7 @@ def call_ai(player, ai,world):
   else: warn_invalid_data()
 
 def sandboxed_ai_call(player, ai_call):
-  block_stdio()
+# block_stdio()
   try:
     res = ai_call()
   except Exception as e:
@@ -163,7 +178,7 @@ def sandboxed_ai_call(player, ai_call):
             + " raised an exception:" )
     print(e)
     return []
-  restore_stdio()
+# restore_stdio()
   return res
 
 class NullDevice():
