@@ -1,10 +1,6 @@
 * how to import/load/communicate with the ais?
-* print warnings when ais return invalid data or produce exceptions
-* suppress ai stdout?
 * enforce bounds for ai running time?
 * nicer graphics
-* respect torus-metric when checking for collisions
-* make collision logic fair (independent of order of seekers list)?
 * win condition
 * record outcomes, maintain a leaderboard?
 * adjust player colors to be distinguishable if needed
