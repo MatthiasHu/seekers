@@ -70,6 +70,21 @@ class Physical:
   def thrust(self):
     return self.base_thrust
 
+  def collision(s, t, world, min_dist):
+    # elastic collision
+    d = world.torus_difference(s.position,t.position)
+    if d.norm() != 0:
+      dn = d.normalized()
+      dv = t.velocity - s.velocity
+      dvdn = dv.dot(dn)
+      if dvdn < 0:
+        s.velocity += dn * dvdn
+        t.velocity -= dn * dvdn
+      ddn = d.dot(dn)
+      if ddn < min_dist:
+        s.position += dn * (ddn - min_dist)
+        t.position -= dn * (ddn - min_dist)
+
 
 class Goal(Physical):
   radius = 15
@@ -130,7 +145,12 @@ class Seeker(Physical):
     b = self.magnet_slowdown if self.magnet.is_on() else 1
     return Physical.thrust(self) * b
 
-  def copy_alterables(src,dest):
+  def collision(s, t, world, min_dist):
+    s.disabled_counter = Seeker.disabled_time
+    t.disabled_counter = Seeker.disabled_time
+    Physical.collision(s, t, world, min_dist)
+
+  def copy_alterables(src, dest):
     for attr,is_valid in Seeker.alterables:
       fallback = getattr(dest,attr)
       val = getattr(src,attr,fallback)
@@ -184,19 +204,22 @@ class World:
   def diameter(self):
     return self.size_vector().norm()
 
-  def torus_distance(self,left,right):
+  def torus_distance(self, left, right):
     def dist1d(l,a,b):
       delta = abs(a-b)
       return min(delta,l-delta)
     return Vector( dist1d(self.width,right.x,left.x)
                  , dist1d(self.height,right.y,left.y) ).norm()
 
-  def torus_direction(self,left,right):
-    def dir1d(l,a,b):
+  def torus_difference(self, left, right):
+    def diff1d(l,a,b):
       delta = abs(a-b)
       return b-a if delta < l-delta else a-b
-    return Vector( dir1d(self.width,right.x,left.x)
-                 , dir1d(self.height,right.y,left.y) ).normalized()
+    return Vector( diff1d(self.width,left.x,right.x)
+                 , diff1d(self.height,left.y,right.y) )
+
+  def torus_direction(self, left, right):
+    return self.torus_difference(left,right).normalized()
 
   def random_position(self):
     return Vector( random.uniform(0, self.width)

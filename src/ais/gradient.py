@@ -22,9 +22,9 @@ def force(otherSeekers, mySeekers, goals, world):
   scaleO = 400
   # scaleM = 100
   def at(x):
-    attractive = [world.torus_direction(g.position,x) * scaleA * void(world,diamA,x,g.position) for g in goals]
-    repulsiveOther = [world.torus_direction(s.position,x) * scaleR * void(world,diamR,x,s.position) for s in otherSeekers]
-    repulsiveOwn = [world.torus_direction(s.position,x) * scaleO * void(world,diamO,x,s.position) for s in otherSeekers]
+    attractive = [world.torus_direction(x,g.position) * scaleA * void(world,diamA,x,g.position) for g in goals]
+    repulsiveOther = [world.torus_direction(x,s.position) * scaleR * void(world,diamR,x,s.position) for s in otherSeekers]
+    repulsiveOwn = [world.torus_direction(x,s.position) * scaleO * void(world,diamO,x,s.position) for s in otherSeekers]
     a = genSum(attractive)
     r = genSum(repulsiveOwn) + genSum(repulsiveOther)
     return a - r

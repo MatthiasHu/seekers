@@ -25,10 +25,8 @@ def tick(players, goals, animations, world):
     for j in range(i+1, len(seekers)):
       t = seekers[j]
       d = world.torus_distance(t.position,s.position)
-      if d < Seeker.radius*2:
-        s_copy = copy.deepcopy(s)
-        seeker_collided(s, t)
-        seeker_collided(t, s_copy)
+      min_dist = s.radius + t.radius
+      if d < min_dist: Seeker.collision(s,t,world,min_dist)
   # handle collisions of seekers with goals
   for p in utils.shuffled(players):
     for s in utils.shuffled(p.seekers):
@@ -44,21 +42,6 @@ def tick(players, goals, animations, world):
       if a.age > a.duration:
         animation_list.pop(i)
 
-
-def seeker_collided(s, t):
-  # disable the seeker
-  s.disabled_counter = Seeker.disabled_time
-  # bounce off the other seeker
-  d = t.position - s.position
-  if d.norm() != 0:
-    dn = d.normalized()
-    dv = t.velocity - s.velocity
-    dvdn = dv.dot(dn)
-    if dvdn < 0:
-      s.velocity += dn * dvdn
-    ddn = d.dot(dn)
-    if ddn < Seeker.radius*2:
-      s.position += dn * (ddn - Seeker.radius*2)
 
 def goal_scored(player, goal_index, goals, animations, world):
   player.score += 1
