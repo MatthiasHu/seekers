@@ -53,8 +53,8 @@ class Physical:
   
   def move(self,world):
     # friction
-    self.velocity.x *= 1-Seeker.friction
-    self.velocity.y *= 1-Seeker.friction
+    self.velocity.x *= 1 - self.friction
+    self.velocity.y *= 1 - self.friction
     # acceleration
     a = self.compute_acceleration()
     self.velocity.x += a.x * self.thrust()
