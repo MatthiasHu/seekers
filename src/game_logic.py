@@ -43,21 +43,6 @@ def tick(players, goals, animations, world):
         animation_list.pop(i)
 
 
-def seeker_collided(s, t):
-  # disable the seeker
-  s.disabled_counter = Seeker.disabled_time
-  # bounce off the other seeker
-  d = t.position - s.position
-  if d.norm() != 0:
-    dn = d.normalized()
-    dv = t.velocity - s.velocity
-    dvdn = dv.dot(dn)
-    if dvdn < 0:
-      s.velocity += dn * dvdn
-    ddn = d.dot(dn)
-    if ddn < Seeker.radius*2:
-      s.position += dn * (ddn - Seeker.radius*2)
-
 def goal_scored(player, goal_index, goals, animations, world):
   player.score += 1
   g = goals[goal_index]
