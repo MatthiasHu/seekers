@@ -163,8 +163,6 @@ class ScoreAnimation:
     self.color = color
 
 class Player:
-  win_score = 100
-
   def __init__(self, name):
     self.name = name
     self.color = string_hash_color(name)
