@@ -23,7 +23,6 @@ players = []
 ais = []
 animations = {"score": []}
 
-
 def start():
   global screen
   global clock
@@ -106,10 +105,10 @@ def call_ai(player, ai,world):
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
-        if isinstance(new.target, Vector):
-          original.target = new.target
-        if isinstance(new.magnetic_field,int) and 1 >= new.magnetic_field >= -1:
-          original.magnetic_field = new.magnetic_field
+        for attr,is_valid in Seeker.alterables:
+          fallback = getattr(original,attr)
+          val = getattr(new,attr,fallback)
+          if is_valid(val): setattr(original,attr,val)
       else:
         warn_invalid_data()
   else:

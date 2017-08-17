@@ -8,6 +8,9 @@ class Vector:
     self.x = x
     self.y = y
 
+  def is_vector(obj):
+    return isinstance(obj,Vector)
+
   def __add__(left, right):
     return Vector(left.x+right.x, left.y+right.y)
   def __sub__(left, right):
@@ -25,6 +28,7 @@ class Vector:
 
   def norm(self):
     return math.sqrt(self.x*self.x + self.y*self.y)
+  
   def normalized(self):
     norm = self.norm()
     if (norm == 0):
@@ -37,7 +41,6 @@ class Vector:
       
   def fmap(self, f):
     return Vector(f(self.x),f(self.y))
-
 
 class Physical:
   friction = 0.02
@@ -80,16 +83,43 @@ class Goal(Physical):
   def compute_acceleration(self):
     return self.acceleration
 
+
+class Magnet():
+  def __init__(self, strength = 0):
+    self.strength = strength
+
+  def is_magnet(obj):
+    typ = isinstance(obj,Magnet) and isinstance(obj.strength,int)
+    val = 1 >= obj.strength >= -1
+    return typ and val
+
+  def is_on(self):
+    return not self.strength == 0
+  
+  def set_repulsive(self):
+    self.strength = -1
+
+  def set_attractive(self):
+    self.strength = 1
+
+  def disable(self):
+    self.strength = 0
+
+
+
+
 class Seeker(Physical):
   radius = 20
   magnet_slowdown = 0.2
   disabled_time = 1000
+  alterables = [ ('target',Vector.is_vector)
+                ,('magnet',Magnet.is_magnet) ]
 
   def __init__(self, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
     self.target = self.position
     self.disabled_counter = 0
-    self.magnetic_field = 0
+    self.magnet = Magnet()
 
   def disabled(self):
     return self.disabled_counter > 0
@@ -99,22 +129,22 @@ class Seeker(Physical):
     return Vector(0,0) if self.disabled_counter>0 else a
 
   def thrust(self):
-    b = 1 if self.magnetic_field == 0 else self.magnet_slowdown
+    b = self.magnet_slowdown if self.magnet.is_on() else 1
     return Physical.thrust(self) * b
 
   def set_magnet_repulsive(self):
-    self.magnetic_field = -1
+    self.magnet.set_respulsive()
 
   def set_magnet_attractive(self):
-    self.magnetic_field = 1
+    self.magnet.set_attractive()
 
-  def set_magnet_disabled(self):
-    self.magnetic_field = 0
+  def disable_magnet(self):
+    self.magnet.disable()
 
   def magnetic_force(self,world,pos):
     r = world.torus_distance(self.position,pos) / world.diameter()
     d = world.torus_direction(self.position,pos)
-    return d * (self.magnetic_field * utils.bump(r*10))
+    return d * (self.magnet.strength * utils.bump(r*10))
 
 
 class ScoreAnimation:
