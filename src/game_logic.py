@@ -26,7 +26,7 @@ def tick(players, goals, animations, world):
       t = seekers[j]
       d = world.torus_distance(t.position,s.position)
       min_dist = s.radius + t.radius
-      if d < min_dist: Seeker.collision(s,t,min_dist)
+      if d < min_dist: Seeker.collision(s,t,world,min_dist)
   # handle collisions of seekers with goals
   for p in utils.shuffled(players):
     for s in utils.shuffled(p.seekers):
