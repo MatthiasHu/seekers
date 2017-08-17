@@ -19,6 +19,7 @@ font = None
 world = World(768, 768)
 goals = []
 players = []
+camps = []
 ais = []
 animations = {"score": []}
 
@@ -29,6 +30,7 @@ def start():
   global world
   global goals
   global players
+  global camps
   global ais
 
   pygame.init()
@@ -51,6 +53,9 @@ def start():
       p.seekers = [Seeker(world.random_position()) for _ in range(0, 3)]
       players.append(p)
       ais.append(sys.modules[m].decide)
+  
+  # set up camps
+  camps = world.generate_camps(players)
 
   # prepare graphics
   draw.init(players)

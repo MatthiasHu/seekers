@@ -1,6 +1,7 @@
 from hash_color import *
 
 import random
+import math
 import utils
 
 class Vector:
@@ -224,5 +225,26 @@ class World:
   def random_position(self):
     return Vector( random.uniform(0, self.width)
                  , random.uniform(0, self.height) )
+  
+  def generate_camps(self, players):
+    n = len(players)
+    r = self.diameter() / 4
+    width = r / 6
+    height = r / 6
+    camp_pos = lambda i: utils.circle(r, 2 * math.pi * i / n)
+    positions = utils.fmap(camp_pos, range(n))
+    for player,pos in zip(players,positions):
+      yield Camp(player, pos, width, height)
+
+class Camp:
+
+  def __init__(self, owner, position, width, height):
+    self.owner = owner
+    self.position = position
+    self.width = width
+    self.height = height
+
+
+
 
 
