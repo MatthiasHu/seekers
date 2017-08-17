@@ -27,6 +27,4 @@ def shuffled(xs):
 def bump(r):
   return math.exp(1 / (r**2 - 1)) if r < 1 else 0
 
-def circle(r,theta):
-  return r * Vector(math.sin(theta),math.cos(theta))
 
