@@ -36,7 +36,7 @@ def draw(players, goals, animations, world, screen):
       color = p.color
       if s.disabled():
         color = interpolate_color(color, [0, 0, 0], 0.5)
-      if p.is_dummy:
+      if p.ai.is_dummy:
         color = interpolate_color(color, [1, 1, 1], 0.5)
       draw_item(color, s.position, Seeker.radius, world, screen)
   # draw animations
