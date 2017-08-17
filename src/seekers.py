@@ -153,7 +153,7 @@ def call_ai(player, ai,world):
   else: warn_invalid_data()
 
 def sandboxed_ai_call(player, ai_call):
-  block_stdio()
+# block_stdio()
   try:
     res = ai_call()
   except Exception as e:
@@ -163,7 +163,7 @@ def sandboxed_ai_call(player, ai_call):
             + " raised an exception:" )
     print(e)
     return []
-  restore_stdio()
+# restore_stdio()
   return res
 
 class NullDevice():
