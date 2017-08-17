@@ -108,7 +108,10 @@ def call_ai(player, ai,world):
         for attr,is_valid in Seeker.alterables:
           fallback = getattr(original,attr)
           val = getattr(new,attr,fallback)
-          if is_valid(val): setattr(original,attr,val)
+          if is_valid(val):
+            setattr(original,attr,val)
+          else:
+            warn_invalid_data()
       else:
         warn_invalid_data()
   else:

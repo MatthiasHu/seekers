@@ -84,7 +84,7 @@ class Goal(Physical):
     return self.acceleration
 
 
-class Magnet():
+class Magnet:
   def __init__(self, strength = 0):
     self.strength = strength
 
@@ -104,8 +104,6 @@ class Magnet():
 
   def disable(self):
     self.strength = 0
-
-
 
 
 class Seeker(Physical):
