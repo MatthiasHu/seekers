@@ -21,19 +21,19 @@ def closest(goals,s):
 
 def force(otherSeekers, mySeekers, goals, world, i):
   diamA = 500
-  diamR = 200
-  diamO = 200
+  diamR = 100
+  diamO = 250
   # diamM = 800
   scaleA = 100
-  scaleR = 200
+  scaleR = 300
   scaleO = 400
   # scaleM = 100
   def at(x):
     g = goals[i]
     # main = world.torus_direction(g.position,x) * scaleM * wedge(diamA,x,g.position)
-    attractive = [world.torus_direction(g.position,x) * scaleA * void(diamA,x,g.position) for g in goals]
-    repulsiveOther = [world.torus_direction(s.position,x) * scaleR * void(diamR,x,s.position) for s in otherSeekers]
-    repulsiveOwn = [world.torus_direction(s.position,x) * scaleO * void(diamO,x,s.position) for s in otherSeekers]
+    attractive = [world.torus_direction(g.position,x) * scaleA * void(world,diamA,x,g.position) for g in goals]
+    repulsiveOther = [world.torus_direction(s.position,x) * scaleR * void(world,diamR,x,s.position) for s in otherSeekers]
+    repulsiveOwn = [world.torus_direction(s.position,x) * scaleO * void(world,diamO,x,s.position) for s in otherSeekers]
     a = genSum(attractive)
     r = genSum(repulsiveOwn) + genSum(repulsiveOther)
     # raise Exception(((a-r).x,(a-r).y))
@@ -41,16 +41,16 @@ def force(otherSeekers, mySeekers, goals, world, i):
   return at
 
 
-def void(diam,a,b):
-  d = (b-a).norm() / diam
+def void(world,diam,a,b):
+  d = world.torus_distance(a,b) / diam
   return 1/(d**2) if d < 1 else 0
 
-def wedge(diam,a,b):
-  d = (b-a).norm() / diam
+def wedge(world,diam,a,b):
+  d = world.torus_distance(a,b) / diam
   return d if d < 1 else 0
 
-def bump(diam,a,b):
-  d = (b-a).norm() / diam
+def bump(world,diam,a,b):
+  d = world.torus_distance(a,b) / diam
   return math.exp(1 / (d**2 - 1)) if d < 1 else 0
 
 def genSum(xs):
