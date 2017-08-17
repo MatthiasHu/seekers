@@ -1,9 +1,12 @@
 from seekers_types import *
 import game_logic
 import draw
-from ais import *
 import sys
 import os
+import os.path
+import glob
+import imp
+import traceback
 
 import pygame
 import sys
@@ -44,16 +47,9 @@ def start():
   # find ais and initialize players
   players = []
   ais = []
-  ai_prefix = "ais."
-  for m in sys.modules:
-    if ( m[:len(ai_prefix)] == ai_prefix
-         and hasattr(sys.modules[m], "decide") ):
-      name = m[len(ai_prefix):]
-      p = Player(name)
-      p.seekers = [Seeker(world.random_position()) for _ in range(0, 3)]
-      players.append(p)
-      ais.append(sys.modules[m].decide)
-  
+  load_ais()
+  reset()
+
   # set up camps
   camps = world.generate_camps(players)
 
@@ -62,6 +58,46 @@ def start():
 
   quit = False
   main_loop()
+
+def load_ais():
+  global players
+  global ais
+
+  for search_path in ("", "./src/ais/"):
+    for filename in glob.glob(search_path + "ai*.py"):
+      name = filename[:-3]
+      p    = Player(name)
+      ai   = load_ai(filename)
+      players.append(p)
+      ais.append(ai)
+
+def load_ai(filename):
+  def dummy_decide(mySeekers, goals, otherPlayers, world):
+    for s in mySeekers:
+      s.target = s.position
+    return mySeekers
+
+  try:
+    ai = imp.load_source(filename[:-3], filename).decide
+    ai.is_dummy = False
+  except Exception:
+    print("**********************************************************", file=sys.stderr)
+    traceback.print_exc(file=sys.stderr)
+    print("", file=sys.stderr)
+
+    ai = dummy_decide
+    ai.is_dummy = True
+
+  ai.filename  = filename
+  ai.timestamp = os.path.getctime(filename)
+
+  return ai
+
+def reset():
+  global players
+
+  for p in players:
+    p.seekers = [Seeker(world.random_position()) for _ in range(0, 3)]
 
 def main_loop():
   global speedup_factor
@@ -80,7 +116,6 @@ def main_loop():
     draw.draw(players, goals, animations, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
-
 def handle_events():
   for e in pygame.event.get():
     handle_event(e)
@@ -94,9 +129,12 @@ def call_ais():
   global players
   global ais
   global world
-  for player,ai in zip(players,ais):
-    call_ai(player,ai,copy.deepcopy(world))
 
+  for i in range(len(players)):
+    if os.path.getctime(ais[i].filename) > ais[i].timestamp:
+      ais[i] = load_ai(ais[i].filename)
+    players[i].is_dummy = ais[i].is_dummy  # hack, sould be a single property
+    call_ai(players[i],ais[i],copy.deepcopy(world))
 
 def call_ai(player, ai,world):
   def warn_invalid_data():
