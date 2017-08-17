@@ -73,12 +73,14 @@ def load_ai(filename):
 
   try:
     ai = imp.load_source(filename[:-3], filename).decide
+    ai.is_dummy = False
   except Exception:
     print("******************************************", file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
     print("", file=sys.stderr)
 
     ai = dummy_decide
+    ai.is_dummy = True
 
   ai.filename  = filename
   ai.timestamp = os.path.getctime(filename)
@@ -125,6 +127,7 @@ def call_ais():
   for i in range(len(players)):
     if os.path.getctime(ais[i].filename) > ais[i].timestamp:
       ais[i] = load_ai(ais[i].filename)
+    players[i].is_dummy = ais[i].is_dummy  # hack, sould be a single property
     call_ai(players[i],ais[i],copy.deepcopy(world))
 
 def call_ai(player, ai,world):
