@@ -76,7 +76,7 @@ def load_ai(filename):
     ai = imp.load_source(filename[:-3], filename).decide
     ai.is_dummy = False
   except Exception:
-    print("******************************************", file=sys.stderr)
+    print("**********************************************************", file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
     print("", file=sys.stderr)
 
