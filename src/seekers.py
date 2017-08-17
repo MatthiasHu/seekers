@@ -23,7 +23,6 @@ world = World(768, 768)
 goals = []
 players = []
 camps = []
-ais = []
 animations = {"score": []}
 
 def start():
@@ -34,7 +33,6 @@ def start():
   global goals
   global players
   global camps
-  global ais
 
   pygame.init()
   screen = pygame.display.set_mode((world.width, world.height))
@@ -46,7 +44,6 @@ def start():
 
   # find ais and initialize players
   players = []
-  ais = []
   load_ais()
   reset()
 
@@ -61,15 +58,13 @@ def start():
 
 def load_ais():
   global players
-  global ais
 
   for search_path in ("", "./src/ais/"):
     for filename in glob.glob(search_path + "ai*.py"):
       name = filename[:-3]
       p    = Player(name)
-      ai   = load_ai(filename)
+      p.ai = load_ai(filename)
       players.append(p)
-      ais.append(ai)
 
 def load_ai(filename):
   def dummy_decide(mySeekers, goals, otherPlayers, world):
@@ -142,23 +137,21 @@ def handle_event(e):
 
 def call_ais():
   global players
-  global ais
   global world
 
-  for i in range(len(players)):
-    if os.path.getctime(ais[i].filename) > ais[i].timestamp:
-      ais[i] = load_ai(ais[i].filename)
-    players[i].is_dummy = ais[i].is_dummy  # hack, sould be a single property
-    call_ai(players[i],ais[i],copy.deepcopy(world))
+  for p in players:
+    if os.path.getctime(p.ai.filename) > p.ai.timestamp:
+      p.ai = load_ai(p.ai.filename)
+    call_ai(p,copy.deepcopy(world))
 
-def call_ai(player, ai,world):
+def call_ai(player, world):
   def warn_invalid_data():
     print( "The AI of Player "
          + player.name
          + " returned invalid data" )
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = sandboxed_ai_call( player
-          , lambda: ai(own_seekers, goals, other_players, world) )
+          , lambda: player.ai(own_seekers, goals, other_players, world) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
