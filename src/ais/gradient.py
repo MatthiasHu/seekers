@@ -40,19 +40,6 @@ def force(otherSeekers, mySeekers, goals, world, i):
     return a - r
   return at
 
-
-def void(world,diam,a,b):
-  d = world.torus_distance(a,b) / diam
-  return 1/(d**2) if d < 1 else 0
-
-def wedge(world,diam,a,b):
-  d = world.torus_distance(a,b) / diam
-  return d if d < 1 else 0
-
-def bump(world,diam,a,b):
-  d = world.torus_distance(a,b) / diam
-  return math.exp(1 / (d**2 - 1)) if d < 1 else 0
-
 def genSum(xs):
   r = xs[0]
   for x in xs[1:]:
@@ -63,4 +50,11 @@ def flatten(nested):
   for xs in nested:
     for x in xs:
       yield x
+
+def void(world,diam,a,b):
+  d = world.torus_distance(a,b) / diam
+  return 1/(d**2) if d < 1 else 0
+
+
+
 
