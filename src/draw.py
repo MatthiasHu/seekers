@@ -25,7 +25,7 @@ def draw(players, camps, goals, animations, world, screen):
   draw_camps(camps, screen)
   # draw goals
   for g in goals:
-    draw_item([255, 200, 0], g.position, Goal.radius, world, screen)
+    draw_item([205, 0, 250], g.position, Goal.radius, world, screen)
   # draw jet streams
   for p in players:
     for s in p.seekers:
@@ -51,7 +51,14 @@ def draw(players, camps, goals, animations, world, screen):
   pygame.display.flip()
 
 def draw_halo(seeker, color, screen):
-  if not seeker.magnet.is_on() or seeker.disabled():
+  if seeker.disabled():
+    return
+
+  mu = abs(math.sin((int(pygame.time.get_ticks() / 30) % 50) / 50 * 2 * math.pi))**2
+  pygame.draw.circle(screen, interpolate_color(color, [0,0,0], mu),
+      (int(seeker.position.x), int(seeker.position.y)), 3 + Seeker.radius, 3)
+
+  if not seeker.magnet.is_on():
     return
 
   for offset in 0, 10, 20, 30, 40:
