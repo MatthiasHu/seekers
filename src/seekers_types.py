@@ -266,7 +266,7 @@ class Camp:
 
   def contains(self,pos):
     delta = self.position - pos
-    return abs(delta.x) < self.width and abs(delta.y) < self.height
+    return 2 * abs(delta.x) < self.width and 2 * abs(delta.y) < self.height
 
 
 
