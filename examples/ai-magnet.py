@@ -11,7 +11,7 @@ for g in goals:
 if dist < 100:
     print("** AN")
     s.set_magnet_attractive()
-    s.target = goals[0].position
+    s.target = own_camp.position # goals[0].position
 else:
     print("** AUS")
     s.disable_magnet()

@@ -85,7 +85,7 @@ def load_ai(filename):
   def mogrify(code):
     if code.startswith("#bot"):
       lines = code.split("\n")
-      lines[0] = "def decide(seekers, goals, otherPlayers, camps, world):"
+      lines[0] = "def decide(seekers, goals, otherPlayers, own_camp, camps, world):"
       for i in range(1,len(lines)):
         lines[i] = " " + lines[i]
       lines.append(" return seekers")
@@ -159,19 +159,24 @@ def call_ais():
   global camps
   global world
 
-  for p in players:
+  for p,c in zip(players,camps):
     if os.path.getctime(p.ai.filename) > p.ai.timestamp:
       p.ai = load_ai(p.ai.filename)
-    call_ai(p,copy.deepcopy(camps),copy.deepcopy(world))
+    call_ai(p, c, copy.deepcopy(camps), copy.deepcopy(world) )
 
-def call_ai(player, camps, world):
+def call_ai(player, own_camp, camps, world):
   def warn_invalid_data():
     print( "The AI of Player "
          + player.name
          + " returned invalid data" )
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = sandboxed_ai_call( player
-          , lambda: player.ai(own_seekers, goals, other_players, camps, world) )
+          , lambda: player.ai( own_seekers
+                             , goals
+                             , other_players
+                             , own_camp
+                             , camps
+                             , world ) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):
