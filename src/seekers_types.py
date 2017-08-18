@@ -191,7 +191,7 @@ class Seeker(Physical):
   def magnetic_force(self,world,pos):
     r = world.torus_distance(self.position,pos) / world.diameter()
     d = world.torus_direction(self.position,pos)
-    return - d * (self.magnet.strength * utils.bump(r*10))
+    return Vector(0,0) if self.disabled() else - d * ( self.magnet.strength * utils.bump(r*10) )
 
 
 class ScoreAnimation:
