@@ -8,10 +8,10 @@ for g in goals:
     dist = (g.position - s.position).norm()
     neargoal = g
 
-if dist < 100:
+if dist < 90:
     print("** AN")
     s.set_magnet_attractive()
-    s.target = own_camp.position # goals[0].position
+    s.target = own_camp.position
 else:
     print("** AUS")
     s.disable_magnet()
