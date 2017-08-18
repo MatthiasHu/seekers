@@ -140,7 +140,7 @@ def main_loop():
     clock.tick(50)  # 20ms relative to last tick
 
     step += 1
-    if tournament_mode and step > 1000:
+    if tournament_mode and step > 10000:
       best_player = sorted(players, key=lambda p: p.score, reverse=True)[0]
       print(best_player.ai.filename)
       quit = True
