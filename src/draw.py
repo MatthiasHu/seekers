@@ -57,7 +57,7 @@ def draw_camps(camps, screen):
     h = camp.height
     dx = w / 2
     dy = h / 2
-    r = pygame.Rect( (x-dx,y+dy)
+    r = pygame.Rect( (x-dx,y-dy)
                    , (w, h) )
     color = camp.owner.color
     pygame.draw.rect(screen, color, r, 5)
