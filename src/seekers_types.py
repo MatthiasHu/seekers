@@ -93,8 +93,8 @@ class Physical:
 
 class Goal(Physical):
   mass = 0.5
-  radius = 15
-  scoring_time = 50
+  radius = 6
+  scoring_time = 150
 
   def __init__(self, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
@@ -140,7 +140,7 @@ class Magnet:
 
 
 class Seeker(Physical):
-  radius = 20
+  radius = 10
   magnet_slowdown = 0.2
   disabled_time = 1000
   alterables = [ ('target',Vector.is_vector)
