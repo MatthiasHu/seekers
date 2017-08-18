@@ -52,13 +52,15 @@ class Physical:
   def __init__(self, position, velocity=Vector(0, 0)):
     self.position = Vector(position.x, position.y)
     self.velocity = Vector(velocity.x, velocity.y)
+    self.acceleration = Vector(0,0)
   
   def move(self,world):
     # friction
     self.velocity.x *= 1 - self.friction
     self.velocity.y *= 1 - self.friction
     # acceleration
-    a = self.compute_acceleration(world)
+    self.update_acceleration(world)
+    a = self.acceleration
     self.velocity.x += a.x * self.thrust()
     self.velocity.y += a.y * self.thrust()
     # displacement
@@ -66,9 +68,9 @@ class Physical:
     self.position.y += self.velocity.y
     world.normalize_position(self.position)
   
-  def compute_acceleration(self,world):
-    return Vector(0,0)
-  
+  def update_acceleration(self, world):
+    pass
+
   def thrust(self):
     return self.base_thrust
 
@@ -102,8 +104,8 @@ class Goal(Physical):
     self.owner = None
     self.owned_for = 0
 
-  def compute_acceleration(self,world):
-    return self.acceleration
+  def update_acceleration(self,world):
+    pass
 
   def camp_tick(self, camp):
     if camp.contains(self.position):
@@ -151,9 +153,11 @@ class Seeker(Physical):
   def disabled(self):
     return self.disabled_counter > 0
 
-  def compute_acceleration(self, world):
-    a = world.torus_direction(self.position, self.target)
-    return Vector(0,0) if self.disabled_counter > 0 else a
+  def update_acceleration(self, world):
+    if self.disabled_counter == 0:
+      a = world.torus_direction(self.position, self.target)
+      self.acceleration = a
+    else: self.acceleration = Vector(0,0)
 
   def thrust(self):
     b = self.magnet_slowdown if self.magnet.is_on() else 1
