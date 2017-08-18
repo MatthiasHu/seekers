@@ -44,6 +44,7 @@ class Vector:
     return Vector(f(self.x),f(self.y))
 
 class Physical:
+  mass = 1
   friction = 0.02
   max_speed = 5
   base_thrust = max_speed * friction
@@ -78,9 +79,10 @@ class Physical:
       dn = d.normalized()
       dv = t.velocity - s.velocity
       dvdn = dv.dot(dn)
+      m = 2 / (s.mass + t.mass)
       if dvdn < 0:
-        s.velocity += dn * dvdn
-        t.velocity -= dn * dvdn
+        s.velocity += dn * (m * t.mass * dvdn)
+        t.velocity -= dn * (m * s.mass * dvdn)
       ddn = d.dot(dn)
       if ddn < min_dist:
         s.position += dn * (ddn - min_dist)
@@ -88,6 +90,7 @@ class Physical:
 
 
 class Goal(Physical):
+  mass = 0.5
   radius = 15
   scoring_time = 500
 
