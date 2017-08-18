@@ -29,7 +29,7 @@ def draw(players, camps, goals, animations, world, screen):
   # draw jet streams
   for p in players:
     for s in p.seekers:
-      a = (s.target - s.position).normalized()
+      a = world.torus_direction(s.position, s.target)
       if (not s.disabled() and a.norm()>0):
         draw_jet_stream(s.position, -a, world, screen)
   # draw seekers
