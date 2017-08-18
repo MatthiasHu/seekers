@@ -4,7 +4,7 @@ import utils
 import operator as op
 
 
-def decide(mySeekers, goals, otherPlayers,world):
+def decide(mySeekers, goals, otherPlayers, camps, world):
   # gradient descend
   f = force( list(utils.flatten(p.seekers for p in otherPlayers)), mySeekers, goals, world )
   for s in mySeekers:
