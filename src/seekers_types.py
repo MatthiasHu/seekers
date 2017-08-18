@@ -93,8 +93,8 @@ class Physical:
 
 class Goal(Physical):
   mass = 0.5
-  radius = 15
-  scoring_time = 50
+  radius = 6
+  scoring_time = 150
 
   def __init__(self, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
@@ -112,8 +112,10 @@ class Goal(Physical):
       if self.owner == camp.owner:
         self.owned_for += 1
       else:
+        self.owned_for = 0
         self.owner = camp.owner
       return self.owned_for >= self.scoring_time
+    else: return False
 
 class Magnet:
   def __init__(self, strength = 0):
@@ -138,7 +140,7 @@ class Magnet:
 
 
 class Seeker(Physical):
-  radius = 20
+  radius = 10
   magnet_slowdown = 0.2
   disabled_time = 1000
   alterables = [ ('target',Vector.is_vector)
@@ -189,7 +191,7 @@ class Seeker(Physical):
   def magnetic_force(self,world,pos):
     r = world.torus_distance(self.position,pos) / world.diameter()
     d = world.torus_direction(self.position,pos)
-    return - d * (self.magnet.strength * utils.bump(r*10))
+    return Vector(0,0) if self.disabled() else - d * ( self.magnet.strength * utils.bump(r*10) )
 
 
 class ScoreAnimation:

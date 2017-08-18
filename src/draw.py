@@ -25,7 +25,7 @@ def draw(players, camps, goals, animations, world, screen):
   draw_camps(camps, screen)
   # draw goals
   for g in goals:
-    draw_item([255, 200, 0], g.position, Goal.radius, world, screen)
+    draw_item([205, 0, 250], g.position, Goal.radius, world, screen)
   # draw jet streams
   for p in players:
     for s in p.seekers:
@@ -41,6 +41,7 @@ def draw(players, camps, goals, animations, world, screen):
       if p.ai.is_dummy:
         color = interpolate_color(color, [1, 1, 1], 0.5)
       draw_item(color, s.position, Seeker.radius, world, screen)
+      draw_halo(s, color, screen)
   # draw animations
   for a in animations["score"]:
     draw_score_animation(a, world, screen)
@@ -48,6 +49,22 @@ def draw(players, camps, goals, animations, world, screen):
   draw_scores(players, screen)
   # actually update display
   pygame.display.flip()
+
+def draw_halo(seeker, color, screen):
+  if seeker.disabled():
+    return
+
+  mu = abs(math.sin((int(pygame.time.get_ticks() / 30) % 50) / 50 * 2 * math.pi))**2
+  pygame.draw.circle(screen, interpolate_color(color, [0,0,0], mu),
+      (int(seeker.position.x), int(seeker.position.y)), 3 + Seeker.radius, 3)
+
+  if not seeker.magnet.is_on():
+    return
+
+  for offset in 0, 10, 20, 30, 40:
+    mu = int(-seeker.magnet.strength * pygame.time.get_ticks() / 50 + offset) % 50
+    pygame.draw.circle(screen, interpolate_color(color, [0,0,0], (mu) / 50),
+      (int(seeker.position.x), int(seeker.position.y)), mu + Seeker.radius, 2)
 
 
 def draw_camps(camps, screen):
