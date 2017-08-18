@@ -4,8 +4,8 @@ s = seekers[0]
 dist = 10000
 neargoal = None
 for g in goals:
-  if (g.position - s.position).norm() < dist:
-    dist = (g.position - s.position).norm()
+  if world.torus_distance(g.position,s.position) < dist:
+    dist = world.torus_distance(g.position,s.position)
     neargoal = g
 
 if dist < 90:
