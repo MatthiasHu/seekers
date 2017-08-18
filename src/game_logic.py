@@ -27,14 +27,12 @@ def tick(players, camps, goals, animations, world):
       d = world.torus_distance(t.position,s.position)
       min_dist = s.radius + t.radius
       if d < min_dist: Seeker.collision(s,t,world,min_dist)
-  # handle collisions of seekers with goals
-  for p in utils.shuffled(players):
-    for s in utils.shuffled(p.seekers):
-      if not s.disabled():
-        for i in range(0, len(goals)):
-          d = world.torus_distance(goals[i].position,s.position)
-          if d < Seeker.radius + Goal.radius:
-            goal_scored(p, i, goals, animations, world)
+  # handle goals and scoring
+  for i,g in enumerate(goals):
+    for camp in camps:
+      scored = g.camp_tick(camp)
+    if scored: 
+      goal_scored(g.owner, i, goals, animations, world) 
   # advance animations
   for _, animation_list in animations.items():
     for (i, a) in enumerate(animation_list):

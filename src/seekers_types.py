@@ -89,16 +89,26 @@ class Physical:
 
 class Goal(Physical):
   radius = 15
+  scoring_time = 500
 
   def __init__(self, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
     self.position = Vector(position.x, position.y)
     self.velocity = Vector(velocity.x, velocity.y)
     self.acceleration = Vector(0,0)
+    self.owner = None
+    self.owned_for = 0
 
   def compute_acceleration(self):
     return self.acceleration
 
+  def camp_tick(self, camp):
+    if camp.contains(self.position):
+      if self.owner == camp.owner:
+        self.owned_for += 1
+      else:
+        self.owner = camp.owner
+      return self.owned_for >= self.scoring_time
 
 class Magnet:
   def __init__(self, strength = 0):
@@ -251,7 +261,9 @@ class Camp:
     self.width = width
     self.height = height
 
-
+  def contains(self,pos):
+    delta = self.position - pos
+    return abs(delta.x) < self.width and abs(delta.y) < self.height
 
 
 
