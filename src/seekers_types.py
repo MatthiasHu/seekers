@@ -205,6 +205,9 @@ class World:
   def diameter(self):
     return self.size_vector().norm()
 
+  def middle(self):
+    return self.size_vector() / 2
+
   def torus_distance(self, left, right):
     def dist1d(l,a,b):
       delta = abs(a-b)
@@ -228,11 +231,12 @@ class World:
  
   def gen_camp(self, n, i, player):
     r = self.diameter() / 4
-    width = r / 6
-    height = r / 6
+    width = r / 5
+    height = r / 5
+    mid = self.middle()
     theta = lambda i: 2 * math.pi * i / n
-    pos = r * Vector( math.sin(theta(i))
-                    , math.cos(theta(i)) )
+    pos = mid + r * Vector( math.sin(theta(i))
+                          , math.cos(theta(i)) )
     return Camp(player, pos, width, height )
 
   def generate_camps(self, players):
