@@ -18,9 +18,11 @@ def init(players):
     player_name_images[p.name] = font.render(p.name, True, p.color)
     
 
-def draw(players, goals, animations, world, screen):
+def draw(players, camps, goals, animations, world, screen):
   # clear screen
   screen.fill([0, 0, 30])
+  # draw camps
+  draw_camps(camps, screen)
   # draw goals
   for g in goals:
     draw_item([255, 200, 0], g.position, Goal.radius, world, screen)
@@ -46,6 +48,20 @@ def draw(players, goals, animations, world, screen):
   draw_scores(players, screen)
   # actually update display
   pygame.display.flip()
+
+
+def draw_camps(camps, screen):
+  for camp in camps:
+    x,y = camp.position.x, camp.position.y
+    w = camp.width
+    h = camp.height
+    dx = w / 2
+    dy = h / 2
+    r = pygame.Rect( (x-dx,y+dy)
+                   , (w, h) )
+    color = camp.owner.color
+    pygame.draw.rect(screen, color, r, 5)
+
 
 def draw_item(color, center, radius, world, screen):
   for (dx, dy) in repetition_offsets(world):

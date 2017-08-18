@@ -77,7 +77,7 @@ def load_player(filename):
   players.append(p)
 
 def load_ai(filename):
-  def dummy_decide(mySeekers, goals, otherPlayers, world):
+  def dummy_decide(mySeekers, goals, otherPlayers, camps, world):
     for s in mySeekers:
       s.target = s.position
     return mySeekers
@@ -85,7 +85,7 @@ def load_ai(filename):
   def mogrify(code):
     if code.startswith("#bot"):
       lines = code.split("\n")
-      lines[0] = "def decide(seekers, goals, otherPlayers, world):"
+      lines[0] = "def decide(seekers, goals, otherPlayers, camps, world):"
       for i in range(1,len(lines)):
         lines[i] = " " + lines[i]
       lines.append(" return seekers")
@@ -123,6 +123,7 @@ def main_loop():
   global speedup_factor
   global quit
   global players
+  global camps
   global goals
   global world
   global animations
@@ -134,8 +135,8 @@ def main_loop():
     handle_events()
     for _ in range(speedup_factor):
       call_ais()
-      game_logic.tick(players, goals, animations, world)
-    draw.draw(players, goals, animations, world, screen)
+      game_logic.tick(players, camps, goals, animations, world)
+    draw.draw(players, camps, goals, animations, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
     step += 1
@@ -155,21 +156,22 @@ def handle_event(e):
 
 def call_ais():
   global players
+  global camps
   global world
 
   for p in players:
     if os.path.getctime(p.ai.filename) > p.ai.timestamp:
       p.ai = load_ai(p.ai.filename)
-    call_ai(p,copy.deepcopy(world))
+    call_ai(p,copy.deepcopy(camps),copy.deepcopy(world))
 
-def call_ai(player, world):
+def call_ai(player, camps, world):
   def warn_invalid_data():
     print( "The AI of Player "
          + player.name
          + " returned invalid data" )
   own_seekers, goals, other_players = prepare_ai_input(player)
   new_seekers = sandboxed_ai_call( player
-          , lambda: player.ai(own_seekers, goals, other_players, world) )
+          , lambda: player.ai(own_seekers, goals, other_players, camps, world) )
   if isinstance(new_seekers, list):
     for new, original in zip(new_seekers, player.seekers):
       if isinstance(new, Seeker):

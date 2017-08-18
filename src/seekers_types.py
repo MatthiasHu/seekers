@@ -89,16 +89,26 @@ class Physical:
 
 class Goal(Physical):
   radius = 15
+  scoring_time = 500
 
   def __init__(self, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
     self.position = Vector(position.x, position.y)
     self.velocity = Vector(velocity.x, velocity.y)
     self.acceleration = Vector(0,0)
+    self.owner = None
+    self.owned_for = 0
 
   def compute_acceleration(self):
     return self.acceleration
 
+  def camp_tick(self, camp):
+    if camp.contains(self.position):
+      if self.owner == camp.owner:
+        self.owned_for += 1
+      else:
+        self.owner = camp.owner
+      return self.owned_for >= self.scoring_time
 
 class Magnet:
   def __init__(self, strength = 0):
@@ -205,6 +215,9 @@ class World:
   def diameter(self):
     return self.size_vector().norm()
 
+  def middle(self):
+    return self.size_vector() / 2
+
   def torus_distance(self, left, right):
     def dist1d(l,a,b):
       delta = abs(a-b)
@@ -228,11 +241,12 @@ class World:
  
   def gen_camp(self, n, i, player):
     r = self.diameter() / 4
-    width = r / 6
-    height = r / 6
+    width = r / 5
+    height = r / 5
+    mid = self.middle()
     theta = lambda i: 2 * math.pi * i / n
-    pos = r * Vector( math.sin(theta(i))
-                    , math.cos(theta(i)) )
+    pos = mid + r * Vector( math.sin(theta(i))
+                          , math.cos(theta(i)) )
     return Camp(player, pos, width, height )
 
   def generate_camps(self, players):
@@ -247,7 +261,9 @@ class Camp:
     self.width = width
     self.height = height
 
-
+  def contains(self,pos):
+    delta = self.position - pos
+    return abs(delta.x) < self.width and abs(delta.y) < self.height
 
 
 
