@@ -92,7 +92,7 @@ class Physical:
 class Goal(Physical):
   mass = 0.5
   radius = 15
-  scoring_time = 500
+  scoring_time = 50
 
   def __init__(self, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
