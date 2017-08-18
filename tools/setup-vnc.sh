@@ -11,11 +11,13 @@ sudo apt-get install -qq -y vnc4server xtightvncviewer openssh-server lxde git \
     libsdl-sge-dev libsdl-sound1.2-dev libsdl-ttf2.0-dev libsdl2-image-dev \
     libsdl2-mixer-dev libsdl2-net-dev libsdl2-ttf-dev libalien-sdl-dev-perl \
     libsdl-pango-dev libsdl-stretch-dev libsdl2-dev libsdl2-gfx-dev \
-    libportmidi-dev python3-pip gedit
+    libportmidi-dev python3-pip \
+    sqlite3 \
+    gedit
 
 id mathecamp >/dev/null || sudo adduser mathecamp --home "$home_directory" --disabled-password
 
-sudo su mathecamp -c "pip3 install pygame"
+sudo su mathecamp -c "pip3 install pygame trueskill"
 
 cd ~mathecamp
 

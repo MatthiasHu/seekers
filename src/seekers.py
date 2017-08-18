@@ -24,6 +24,7 @@ goals = []
 players = []
 camps = []
 animations = {"score": []}
+tournament_mode = False
 
 def start():
   global screen
@@ -44,7 +45,7 @@ def start():
 
   # find ais and initialize players
   players = []
-  load_ais()
+  load_players()
   reset()
 
   # set up camps
@@ -56,15 +57,24 @@ def start():
   quit = False
   main_loop()
 
-def load_ais():
+def load_players():
   global players
+  global tournament_mode
 
-  for search_path in ("", "./src/ais/"):
-    for filename in glob.glob(search_path + "ai*.py"):
-      name = filename[:-3]
-      p    = Player(name)
-      p.ai = load_ai(filename)
-      players.append(p)
+  if len(sys.argv) <= 1:
+    for search_path in ("", "./src/ais/"):
+      for filename in glob.glob(search_path + "ai*.py"):
+        load_player(filename)
+  else:
+    for filename in sys.argv[1:]:
+      load_player(filename)
+    tournament_mode = True
+
+def load_player(filename):
+  name = filename[:-3]
+  p    = Player(name)
+  p.ai = load_ai(filename)
+  players.append(p)
 
 def load_ai(filename):
   def dummy_decide(mySeekers, goals, otherPlayers, world):
@@ -118,6 +128,8 @@ def main_loop():
   global animations
   global screen
 
+  step = 0
+
   while not quit:
     handle_events()
     for _ in range(speedup_factor):
@@ -125,6 +137,12 @@ def main_loop():
       game_logic.tick(players, goals, animations, world)
     draw.draw(players, goals, animations, world, screen)
     clock.tick(50)  # 20ms relative to last tick
+
+    step += 1
+    if tournament_mode and step > 1000:
+      best_player = sorted(players, key=lambda p: p.score, reverse=True)[0]
+      print(best_player.ai.filename)
+      quit = True
 
 def handle_events():
   for e in pygame.event.get():
