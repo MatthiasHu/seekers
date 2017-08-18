@@ -161,7 +161,7 @@ class Seeker(Physical):
     return True
 
   def set_magnet_repulsive(self):
-    self.magnet.set_respulsive()
+    self.magnet.set_repulsive()
 
   def set_magnet_attractive(self):
     self.magnet.set_attractive()
