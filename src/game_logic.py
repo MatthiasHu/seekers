@@ -36,9 +36,9 @@ def tick(players, camps, goals, animations, world):
   # handle goals and scoring
   for i,g in enumerate(goals):
     for camp in camps:
-      scored = g.camp_tick(camp)
-    if scored: 
-      goal_scored(g.owner, i, goals, animations, world) 
+      if g.camp_tick(camp):
+        goal_scored(g.owner, i, goals, animations, world)
+        break
   # advance animations
   for _, animation_list in animations.items():
     for (i, a) in enumerate(animation_list):

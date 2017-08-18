@@ -112,8 +112,10 @@ class Goal(Physical):
       if self.owner == camp.owner:
         self.owned_for += 1
       else:
+        self.owned_for = 0
         self.owner = camp.owner
       return self.owned_for >= self.scoring_time
+    else: return False
 
 class Magnet:
   def __init__(self, strength = 0):

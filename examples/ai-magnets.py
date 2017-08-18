@@ -11,6 +11,6 @@ for i,s in enumerate(seekers):
   else:
     print("** AUS")
     s.disable_magnet()
-    s.target = goals[2].position
+    s.target = g.position
 
 
