@@ -5,7 +5,7 @@
 number_of_sessions=5
 home_directory=/home/mathecamp
 
-sudo apt-get install -qq -y vnc4server xtightvncviewer openssh-server lxde git \
+sudo apt-get install -y vnc4server xtightvncviewer openssh-server lxde git \
     libsdl1.2-dev libzzip-dev libsdl-console-dev libsdl-gfx1.2-dev \
     libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-net1.2-dev libsdl-ocaml-dev \
     libsdl-sge-dev libsdl-sound1.2-dev libsdl-ttf2.0-dev libsdl2-image-dev \

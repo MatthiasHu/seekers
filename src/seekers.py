@@ -1,6 +1,8 @@
 from seekers_types import *
 import game_logic
+import utils
 import draw
+
 import sys
 import os
 import os.path
@@ -14,7 +16,7 @@ import copy
 import random
 
 
-speedup_factor = 1
+speedup_factor = 10
 screen = None
 quit = False
 clock = None
@@ -77,18 +79,21 @@ def load_player(filename):
   players.append(p)
 
 def load_ai(filename):
-  def dummy_decide(mySeekers, goals, otherPlayers, camps, world):
+  def dummy_decide(mySeekers, other_seekers, all_seekers, goals, otherPlayers, own_camp, camps, world):
     for s in mySeekers:
       s.target = s.position
     return mySeekers
 
+  def indent(lines):
+    return utils.fmap(lambda l: " "+l,lines)
+
   def mogrify(code):
     if code.startswith("#bot"):
+      prelude = []
       lines = code.split("\n")
-      lines[0] = "def decide(seekers, goals, otherPlayers, own_camp, camps, world):"
-      for i in range(1,len(lines)):
-        lines[i] = " " + lines[i]
-      lines.append(" return seekers")
+      seekerdef = ["def decide(seekers, other_seekers, all_seekers, goals, otherPlayers, own_camp, camps, world):"]
+      seekerret = ["return seekers"]
+      lines = seekerdef + indent(prelude + lines[1:] + seekerret)
       return "\n".join(lines)
     else:
       return code
@@ -97,7 +102,8 @@ def load_ai(filename):
     with open(filename, "r") as f:
       code = mogrify(f.read())
       mod  = imp.new_module(filename[:-3])
-      exec(code, mod.__dict__)
+      mod_dict = mod.__dict__
+      exec(code, mod_dict)
       ai = mod.decide
       ai.is_dummy = False
   except Exception:
@@ -162,16 +168,18 @@ def call_ais():
   for p,c in zip(players,camps):
     if os.path.getctime(p.ai.filename) > p.ai.timestamp:
       p.ai = load_ai(p.ai.filename)
-    call_ai(p, c, copy.deepcopy(camps), copy.deepcopy(world) )
+    call_ai(p, c)
 
-def call_ai(player, own_camp, camps, world):
+def call_ai(player, own_camp):
   def warn_invalid_data():
     print( "The AI of Player "
          + player.name
          + " returned invalid data" )
-  own_seekers, goals, other_players = prepare_ai_input(player)
+  own_seekers, other_seekers, all_seekers, goals, other_players, camps, world = prepare_ai_input(player)
   new_seekers = sandboxed_ai_call( player
           , lambda: player.ai( own_seekers
+                             , other_seekers
+                             , all_seekers
                              , goals
                              , other_players
                              , own_camp
@@ -213,12 +221,20 @@ def restore_stdio():
 def prepare_ai_input(player):
   global players
   global goals
+  global world
   i = players.index(player)
   other_players = copy.deepcopy(players)
   other_players.pop(i)
-  return ( copy.deepcopy(player.seekers)
+  own_seekers = copy.deepcopy(player.seekers)
+  other_seekers = copy.deepcopy(list(utils.flatten([p.seekers for p in other_players])))
+  all_seekers = copy.deepcopy(list(utils.flatten([p.seekers for p in players])))
+  return ( own_seekers
+         , other_seekers
+         , all_seekers
          , copy.deepcopy(goals)
-         , other_players )
+         , other_players
+         , copy.deepcopy(camps)
+         , copy.deepcopy(world) )
 
 
 start()

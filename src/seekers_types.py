@@ -123,14 +123,14 @@ class Magnet:
 
   def is_magnet(obj):
     typ = isinstance(obj,Magnet) and isinstance(obj.strength,int)
-    val = 1 >= obj.strength >= -1
+    val = 1 >= obj.strength >= -8
     return typ and val
 
   def is_on(self):
     return not self.strength == 0
   
   def set_repulsive(self):
-    self.strength = -1
+    self.strength = -8
 
   def set_attractive(self):
     self.strength = 1
@@ -142,7 +142,7 @@ class Magnet:
 class Seeker(Physical):
   radius = 10
   magnet_slowdown = 0.2
-  disabled_time = 1000
+  disabled_time = 10
   alterables = [ ('target',Vector.is_vector)
                 ,('magnet',Magnet.is_magnet) ]
 
@@ -155,6 +155,9 @@ class Seeker(Physical):
   def disabled(self):
     return self.disabled_counter > 0
 
+  def disable(self):
+    self.disabled_counter = Seeker.disabled_time
+
   def update_acceleration(self, world):
     if self.disabled_counter == 0:
       a = world.torus_direction(self.position, self.target)
@@ -166,8 +169,14 @@ class Seeker(Physical):
     return Physical.thrust(self) * b
 
   def collision(s, t, world, min_dist):
-    s.disabled_counter = Seeker.disabled_time
-    t.disabled_counter = Seeker.disabled_time
+    if s.magnet.is_on():
+      s.disable()
+      if t.magnet.is_on(): t.disable()
+    elif t.magnet.is_on():
+      t.disable()
+    else:
+      s.disable()
+      t.disable()
     Physical.collision(s, t, world, min_dist)
 
   def copy_alterables(src, dest):
@@ -186,6 +195,9 @@ class Seeker(Physical):
     self.magnet.set_attractive()
 
   def disable_magnet(self):
+    self.magnet.disable()
+
+  def set_magnet_disabled(self):
     self.magnet.disable()
 
   def magnetic_force(self,world,pos):
@@ -243,6 +255,26 @@ class World:
 
   def torus_direction(self, left, right):
     return self.torus_difference(left,right).normalized()
+
+  def index_of_nearest(self,pos,positions):
+    d = self.torus_distance(pos,positions[0])
+    j = 0
+    for i,p in enumerate(positions[1:]):
+      dn = self.torus_distance(pos,p)
+      if dn < d:
+        d = dn
+        j = i
+    return j
+
+  def nearest_goal(self,pos,goals):
+    i = self.index_of_nearest(pos,[g.position for g in goals])
+    return goals[i]
+
+
+  def nearest_seeker(self,pos,seekers):
+    i = self.index_of_nearest(pos,[s.position for s in seekers])
+    return seekers[i]
+
 
   def random_position(self):
     return Vector( random.uniform(0, self.width)
