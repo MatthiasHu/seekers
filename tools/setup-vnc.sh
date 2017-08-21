@@ -32,7 +32,7 @@ export XKL_XMODMAP_DISABLE=1  # for GNOME
 
 (
     cd session$DISPLAY
-    lxpanel --geometry 80x24+10+10 -e ~/seekers/tools/run-interactive.sh &
+    lxterminal -e ~/seekers/tools/run-interactive.sh &
     gedit -- "$(ls -t -- ai*.py | head -n1)" &
 )
 
@@ -58,8 +58,8 @@ for i in $(seq 1 $number_of_sessions); do
     (
         sudo su mathecamp -c "mkdir -p session:$i"
         [ -e "session:$i/simple.py" ] || sudo su mathecamp -c "cp seekers/examples/ai-simple.py session:$i/"
-        sudo su mathecamp -c "vncserver -kill :$i" || true
-        sudo su mathecamp -c "vncserver :$i"
+        env -i sudo su mathecamp -c "vncserver -kill :$i" || true
+        env -i sudo su mathecamp -c "vncserver :$i"
     ) &
 done
 
