@@ -5,7 +5,7 @@
 number_of_sessions=5
 home_directory=/home/mathecamp
 
-sudo apt-get install -y vnc4server xtightvncviewer openssh-server lxde git \
+sudo apt-get install -y vnc4server xtightvncviewer openssh-server lxde lxsession git \
     libsdl1.2-dev libzzip-dev libsdl-console-dev libsdl-gfx1.2-dev \
     libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-net1.2-dev libsdl-ocaml-dev \
     libsdl-sge-dev libsdl-sound1.2-dev libsdl-ttf2.0-dev libsdl2-image-dev \
@@ -32,10 +32,11 @@ export XKL_XMODMAP_DISABLE=1  # for GNOME
 
 (
     cd session$DISPLAY
-    x-terminal-emulator -geometry 80x24+10+10 -ls -e ~/seekers/tools/run-interactive.sh &
+    lxpanel --geometry 80x24+10+10 -e ~/seekers/tools/run-interactive.sh &
     gedit -- "$(ls -t -- ai*.py | head -n1)" &
 )
 
+lxpanel &
 exec lxsession
 EOF
 
