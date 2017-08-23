@@ -263,7 +263,7 @@ class World:
       dn = self.torus_distance(pos,p)
       if dn < d:
         d = dn
-        j = i
+        j = i + 1
     return j
 
   def nearest_goal(self,pos,goals):
