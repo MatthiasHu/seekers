@@ -43,7 +43,7 @@ def start():
   random.seed()
 
   # initialize goals
-  goals = [Goal(world.random_position()) for _ in range(0, 3)]
+  goals = [Goal(world.random_position()) for _ in range(0, 6)]
 
   # find ais and initialize players
   players = []
@@ -123,7 +123,7 @@ def reset():
   global players
 
   for p in players:
-    p.seekers = [Seeker(world.random_position()) for _ in range(0, 3)]
+    p.seekers = [Seeker(world.random_position()) for _ in range(0, 5)]
 
 def main_loop():
   global speedup_factor
