@@ -142,7 +142,7 @@ class Magnet:
 class Seeker(Physical):
   radius = 10
   magnet_slowdown = 0.2
-  disabled_time = 10
+  disabled_time = 250
   alterables = [ ('target',Vector.is_vector)
                 ,('magnet',Magnet.is_magnet) ]
 
