@@ -1,12 +1,11 @@
 #bot
 
 s = seekers[0]
-dist = 10000
-neargoal = None
-for g in goals:
-  if world.torus_distance(g.position,s.position) < dist:
-    dist = world.torus_distance(g.position,s.position)
-    neargoal = g
+goal = world.nearest_goal(s.position,goals)
+dist = world.torus_distance(s.position,goal.position)
+
+#goal = goals[2]
+#dist = world.torus_distance(s.position,goal.position)
 
 if dist < 90:
     print("** AN")
@@ -15,4 +14,4 @@ if dist < 90:
 else:
     print("** AUS")
     s.disable_magnet()
-    s.target = goals[2].position
+    s.target = goal.position

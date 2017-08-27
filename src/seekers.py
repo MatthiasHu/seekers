@@ -16,7 +16,7 @@ import copy
 import random
 
 
-speedup_factor = 10
+speedup_factor = 7
 screen = None
 quit = False
 clock = None
@@ -27,6 +27,9 @@ players = []
 camps = []
 animations = {"score": []}
 tournament_mode = False
+
+num_goals = 6
+num_seekers = 5
 
 def start():
   global screen
@@ -40,10 +43,10 @@ def start():
   pygame.init()
   screen = pygame.display.set_mode((world.width, world.height))
   clock = pygame.time.Clock()
-  random.seed()
+  random.seed(42)
 
   # initialize goals
-  goals = [Goal(world.random_position()) for _ in range(0, 6)]
+  goals = [Goal(world.random_position()) for _ in range(0, num_goals)]
 
   # find ais and initialize players
   players = []
@@ -123,7 +126,7 @@ def reset():
   global players
 
   for p in players:
-    p.seekers = [Seeker(world.random_position()) for _ in range(0, 5)]
+    p.seekers = [Seeker(world.random_position()) for _ in range(0, num_seekers)]
 
 def main_loop():
   global speedup_factor
@@ -202,7 +205,7 @@ def sandboxed_ai_call(player, ai_call):
     print(  "The AI of Player "
             + player.name
             + " raised an exception:" )
-    print(e)
+    traceback.print_exc(file=sys.stderr)
     return []
 # restore_stdio()
   return res

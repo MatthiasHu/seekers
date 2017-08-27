@@ -2,7 +2,7 @@
 # Installs the necessary dependencies (on an Ubuntu-style system), sets up a
 # user account, and fires off several VNC servers.
 
-number_of_sessions=5
+number_of_sessions=4
 home_directory=/home/mathecamp
 
 sudo apt-get install -y vnc4server xtightvncviewer openssh-server lxde lxsession git \
@@ -17,7 +17,7 @@ sudo apt-get install -y vnc4server xtightvncviewer openssh-server lxde lxsession
 
 id mathecamp >/dev/null || sudo adduser mathecamp --home "$home_directory" --disabled-password
 
-sudo su mathecamp -c "pip3 install pygame trueskill"
+#sudo su mathecamp -c "pip3 install pygame trueskill"
 
 cd ~mathecamp
 
@@ -54,7 +54,7 @@ sudo ln -s .vnc/xstartup .vncstartup
 
 [ -d "seekers" ] || sudo su mathecamp -c "git clone https://github.com/MatthiasHu/seekers"
 
-for i in $(seq 1 $number_of_sessions); do
+for i in $(seq 1 $num_sessions); do
     (
         sudo su mathecamp -c "mkdir -p session:$i"
         [ -e "session:$i/simple.py" ] || sudo su mathecamp -c "cp seekers/examples/ai-simple.py session:$i/"
