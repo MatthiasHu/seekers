@@ -3,6 +3,8 @@ from hash_color import *
 import random
 import math
 import utils
+import ctypes
+import multiprocessing as mp
 
 class Vector:
   def __init__(self, x=0, y=0):
@@ -11,7 +13,15 @@ class Vector:
 
   def is_vector(obj):
     return isinstance(obj,Vector)
+  
+  def __iter__(self):
+    return (self.x,self.y).__iter__()
 
+  def __getitem__(self, i):
+    if i == 0: return self.x
+    elif i == 1: return self.y
+    else: raise IndexError
+  
   def __add__(left, right):
     return Vector(left.x+right.x, left.y+right.y)
   def __sub__(left, right):
@@ -95,6 +105,7 @@ class Goal(Physical):
   mass = 0.5
   radius = 6
   scoring_time = 150
+  uid_counter = mp.Value(ctypes.c_int64,0)
 
   def __init__(self, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
@@ -103,6 +114,9 @@ class Goal(Physical):
     self.acceleration = Vector(0,0)
     self.owner = None
     self.owned_for = 0
+    with Goal.uid_counter.get_lock():
+      self.uid = Goal.uid_counter.value
+      Goal.uid_counter.value += 1
 
   def update_acceleration(self,world):
     pass
@@ -222,9 +236,10 @@ class Player:
     self.seekers = []
 
 class World:
-  def __init__(self, width, height):
+  def __init__(self, width, height, debug = False):
     self.width = width
     self.height = height
+    self.debug_mode = debug
 
   def normalize_position(self, pos):
     pos.x -= math.floor(pos.x/self.width)*self.width
