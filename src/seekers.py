@@ -21,7 +21,7 @@ screen = None
 quit = False
 clock = None
 font = None
-world = World(768, 768)
+world = World(768, 768, debug=True)
 goals = []
 players = []
 camps = []
