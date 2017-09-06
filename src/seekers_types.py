@@ -160,8 +160,9 @@ class Seeker(Physical):
   alterables = [ ('target',Vector.is_vector)
                 ,('magnet',Magnet.is_magnet) ]
 
-  def __init__(self, position, velocity=Vector(0, 0)):
+  def __init__(self, uid, position, velocity=Vector(0, 0)):
     Physical.__init__(self,position,velocity)
+    self.uid = uid
     self.target = self.position
     self.disabled_counter = 0
     self.magnet = Magnet()
