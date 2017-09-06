@@ -126,7 +126,7 @@ def reset():
   global players
 
   for p in players:
-    p.seekers = [Seeker(world.random_position()) for _ in range(0, num_seekers)]
+    p.seekers = [Seeker(i,world.random_position()) for i in range(0, num_seekers)]
 
 def main_loop():
   global speedup_factor

@@ -6,7 +6,7 @@ import random
 
 player_name_images = {}
 font = None
-
+background_color = [0, 0, 30]
 
 def init(players):
   global font
@@ -20,7 +20,7 @@ def init(players):
 
 def draw(players, camps, goals, animations, world, screen):
   # clear screen
-  screen.fill([0, 0, 30])
+  screen.fill(background_color)
   # draw camps
   draw_camps(camps, screen)
   # draw goals
@@ -35,13 +35,7 @@ def draw(players, camps, goals, animations, world, screen):
   # draw seekers
   for p in players:
     for s in p.seekers:
-      color = p.color
-      if s.disabled():
-        color = interpolate_color(color, [0, 0, 0], 0.5)
-      if p.ai.is_dummy:
-        color = interpolate_color(color, [1, 1, 1], 0.5)
-      draw_item(color, s.position, Seeker.radius, world, screen)
-      draw_halo(s, color, screen)
+      draw_seeker(s, p, world, screen)
   # draw animations
   for a in animations["score"]:
     draw_score_animation(a, world, screen)
@@ -51,14 +45,35 @@ def draw(players, camps, goals, animations, world, screen):
   pygame.display.flip()
 
 
+def draw_seeker(seeker, player, world, screen):
+  color = player.color
+  pos = seeker.position
+  if seeker.disabled():
+    color = interpolate_color(color, [0, 0, 0], 0.5)
+  if player.ai.is_dummy:
+    color = interpolate_color(color, [1, 1, 1], 0.5)
+  draw_item(color, pos, Seeker.radius, world, screen)
+  draw_halo(seeker, color, screen)
+  if world.debug_mode:
+    draw_text(str(seeker.uid), background_color, pos, screen)
+
 def draw_goal(goal, world, screen):
   global font
   color = [205, 0, 250]
   pos = goal.position
   draw_item(color, pos, Goal.radius, world, screen)
   if world.debug_mode:
-    screen.blit( font.render( str(goal.uid), False, color )
-               , tuple(pos) )
+    adj_pos = pos + Vector(Goal.radius, Goal.radius) / 2
+    draw_text(str(goal.uid), color, adj_pos, screen, center=False)
+
+
+def draw_text(text, color, pos, screen, center=True):
+  global font
+  (dx,dy) = font.size(text)
+  adj_pos = pos - Vector(dx,dy) / 2 if center else pos
+  screen.blit( font.render(text, False, color)
+               , tuple(adj_pos) )
+
 
 def draw_halo(seeker, color, screen):
   if seeker.disabled():
