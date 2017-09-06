@@ -25,7 +25,7 @@ def draw(players, camps, goals, animations, world, screen):
   draw_camps(camps, screen)
   # draw goals
   for g in goals:
-    draw_item([205, 0, 250], g.position, Goal.radius, world, screen)
+    draw_goal(g, world, screen)
   # draw jet streams
   for p in players:
     for s in p.seekers:
@@ -49,6 +49,16 @@ def draw(players, camps, goals, animations, world, screen):
   draw_scores(players, screen)
   # actually update display
   pygame.display.flip()
+
+
+def draw_goal(goal, world, screen):
+  global font
+  color = [205, 0, 250]
+  pos = goal.position
+  draw_item(color, pos, Goal.radius, world, screen)
+  if world.debug_mode:
+    screen.blit( font.render( str(goal.uid), False, color )
+               , tuple(pos) )
 
 def draw_halo(seeker, color, screen):
   if seeker.disabled():
