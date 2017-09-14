@@ -21,10 +21,9 @@ def tick(players, camps, goals, animations, world):
     g.move(world)
   # handle collisions
   physicals = seekers + goals
-  numPhysicals = len(physicals)
-  for i in range(0, numPhysicals):
+  for i in range(0, len(physicals)):
     s = physicals[i]
-    for j in range(i+1, numPhysicals):
+    for j in range(i+1, len(physicals)):
       t = physicals[j]
       d = world.torus_distance(t.position,s.position)
       min_dist = s.radius + t.radius

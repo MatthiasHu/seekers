@@ -21,7 +21,7 @@ screen = None
 quit = False
 clock = None
 font = None
-world = World(768, 768, debug=True)
+world = World(768, 768)
 goals = []
 players = []
 camps = []
@@ -41,9 +41,7 @@ def start():
   global camps
 
   pygame.init()
-  pygame.event.set_allowed([pygame.QUIT])
-  dimensions = (world.width,world.height)
-  screen = pygame.display.set_mode( dimensions )
+  screen = pygame.display.set_mode((world.width, world.height))
   clock = pygame.time.Clock()
   random.seed(42)
 
@@ -147,7 +145,7 @@ def main_loop():
     for _ in range(speedup_factor):
       call_ais()
       game_logic.tick(players, camps, goals, animations, world)
-    draw.draw(players, camps, goals, animations, world, screen, clock)
+    draw.draw(players, camps, goals, animations, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
     step += 1
@@ -229,10 +227,10 @@ def prepare_ai_input(player):
   global world
   i = players.index(player)
   other_players = copy.deepcopy(players)
-  this_player = other_players.pop(i)
-  own_seekers = this_player.seekers
-  other_seekers = list(utils.flatten([p.seekers for p in other_players]))
-  all_seekers = list(utils.flatten([p.seekers for p in players]))
+  other_players.pop(i)
+  own_seekers = copy.deepcopy(player.seekers)
+  other_seekers = copy.deepcopy(list(utils.flatten([p.seekers for p in other_players])))
+  all_seekers = copy.deepcopy(list(utils.flatten([p.seekers for p in players])))
   return ( own_seekers
          , other_seekers
          , all_seekers

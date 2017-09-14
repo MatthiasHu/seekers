@@ -18,7 +18,7 @@ def init(players):
     player_name_images[p.name] = font.render(p.name, True, p.color)
     
 
-def draw(players, camps, goals, animations, world, screen, clock):
+def draw(players, camps, goals, animations, world, screen):
   # clear screen
   screen.fill(background_color)
   # draw camps
@@ -39,8 +39,8 @@ def draw(players, camps, goals, animations, world, screen, clock):
   # draw animations
   for a in animations["score"]:
     draw_score_animation(a, world, screen)
-  # draw information (player's scores, etc.)
-  draw_information(players, Vector(10,10), world, screen, clock)
+  # draw player's scores
+  draw_scores(players, screen)
   # actually update display
   pygame.display.flip()
 
@@ -137,18 +137,12 @@ def repetition_offsets(world):
       l.append((ix*world.width, iy*world.height))
   return l
 
-def draw_information(players, pos, world, screen, clock):
+def draw_scores(players, screen):
   global name_images
   global font
 
-  if world.debug_mode:
-    # draw fps
-    fps = int(clock.get_fps())
-    draw_text(str(fps), [250,250,250], pos, screen,center=False)
-  dx = Vector(40,0)
-  dy = Vector(0,30)
-  pos += dy
+  y = 10
   for p in players:
-    draw_text(str(p.score), p.color, pos, screen, center=False)
-    screen.blit(player_name_images[p.name], tuple(pos + dx))
-    pos += dy
+    screen.blit(font.render(str(p.score), False, p.color), (10, y))
+    screen.blit(player_name_images[p.name], (50, y))
+    y += 30
