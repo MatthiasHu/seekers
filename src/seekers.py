@@ -228,11 +228,11 @@ def prepare_ai_input(player):
   global goals
   global world
   i = players.index(player)
-  other_players = copy.deepcopy(players)
-  this_player = other_players.pop(i)
-  own_seekers = this_player.seekers
+  all_players = copy.deepcopy(players)
+  all_seekers = list(utils.flatten([p.seekers for p in all_players]))
+  this_player, other_players = utils.pop_split(all_players,i)
   other_seekers = list(utils.flatten([p.seekers for p in other_players]))
-  all_seekers = list(utils.flatten([p.seekers for p in players]))
+  own_seekers = this_player.seekers
   return ( own_seekers
          , other_seekers
          , all_seekers
