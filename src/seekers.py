@@ -145,7 +145,7 @@ def main_loop():
     for _ in range(speedup_factor):
       call_ais()
       game_logic.tick(players, camps, goals, animations, world)
-    draw.draw(players, camps, goals, animations, world, screen)
+    draw.draw(players, camps, goals, animations, clock, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
     step += 1
