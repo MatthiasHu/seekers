@@ -126,7 +126,7 @@ def reset():
   global players
 
   for p in players:
-    p.seekers = [Seeker(world.random_position()) for _ in range(0, num_seekers)]
+    p.seekers = [Seeker(i,world.random_position()) for i in range(0, num_seekers)]
 
 def main_loop():
   global speedup_factor
@@ -145,7 +145,7 @@ def main_loop():
     for _ in range(speedup_factor):
       call_ais()
       game_logic.tick(players, camps, goals, animations, world)
-    draw.draw(players, camps, goals, animations, world, screen)
+    draw.draw(players, camps, goals, animations, clock, world, screen)
     clock.tick(50)  # 20ms relative to last tick
 
     step += 1

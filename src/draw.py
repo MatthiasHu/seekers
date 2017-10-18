@@ -6,7 +6,7 @@ import random
 
 player_name_images = {}
 font = None
-
+background_color = [0, 0, 30]
 
 def init(players):
   global font
@@ -18,14 +18,14 @@ def init(players):
     player_name_images[p.name] = font.render(p.name, True, p.color)
     
 
-def draw(players, camps, goals, animations, world, screen):
+def draw(players, camps, goals, animations, clock, world, screen):
   # clear screen
-  screen.fill([0, 0, 30])
+  screen.fill(background_color)
   # draw camps
   draw_camps(camps, screen)
   # draw goals
   for g in goals:
-    draw_item([205, 0, 250], g.position, Goal.radius, world, screen)
+    draw_goal(g, world, screen)
   # draw jet streams
   for p in players:
     for s in p.seekers:
@@ -35,20 +35,45 @@ def draw(players, camps, goals, animations, world, screen):
   # draw seekers
   for p in players:
     for s in p.seekers:
-      color = p.color
-      if s.disabled():
-        color = interpolate_color(color, [0, 0, 0], 0.5)
-      if p.ai.is_dummy:
-        color = interpolate_color(color, [1, 1, 1], 0.5)
-      draw_item(color, s.position, Seeker.radius, world, screen)
-      draw_halo(s, color, screen)
+      draw_seeker(s, p, world, screen)
   # draw animations
   for a in animations["score"]:
     draw_score_animation(a, world, screen)
-  # draw player's scores
-  draw_scores(players, screen)
+  # draw information (player's scores, etc.)
+  draw_information(players, Vector(10,10), clock, world, screen)
   # actually update display
   pygame.display.flip()
+
+
+def draw_seeker(seeker, player, world, screen):
+  color = player.color
+  pos = seeker.position
+  if seeker.disabled():
+    color = interpolate_color(color, [0, 0, 0], 0.5)
+  if player.ai.is_dummy:
+    color = interpolate_color(color, [1, 1, 1], 0.5)
+  draw_item(color, pos, Seeker.radius, world, screen)
+  draw_halo(seeker, color, screen)
+  if world.debug_mode:
+    draw_text(str(seeker.uid), background_color, pos, screen)
+
+def draw_goal(goal, world, screen):
+  global font
+  color = [205, 0, 250]
+  pos = goal.position
+  draw_item(color, pos, Goal.radius, world, screen)
+  if world.debug_mode:
+    adj_pos = pos + Vector(Goal.radius, Goal.radius) / 2
+    draw_text(str(goal.uid), color, adj_pos, screen, center=False)
+
+
+def draw_text(text, color, pos, screen, center=True):
+  global font
+  (dx,dy) = font.size(text)
+  adj_pos = pos - Vector(dx,dy) / 2 if center else pos
+  screen.blit( font.render(text, False, color)
+               , tuple(adj_pos) )
+
 
 def draw_halo(seeker, color, screen):
   if seeker.disabled():
@@ -112,12 +137,18 @@ def repetition_offsets(world):
       l.append((ix*world.width, iy*world.height))
   return l
 
-def draw_scores(players, screen):
+def draw_information(players, pos, clock, world, screen):
   global name_images
   global font
 
-  y = 10
+  if world.debug_mode:
+    # draw fps
+    fps = int(clock.get_fps())
+    draw_text(str(fps), [250,250,250], pos, screen,center=False)
+  dx = Vector(40,0)
+  dy = Vector(0,30)
+  pos += dy
   for p in players:
-    screen.blit(font.render(str(p.score), False, p.color), (10, y))
-    screen.blit(player_name_images[p.name], (50, y))
-    y += 30
+    draw_text(str(p.score), p.color, pos, screen, center=False)
+    screen.blit(player_name_images[p.name], tuple(pos + dx))
+    pos += dy
