@@ -13,3 +13,13 @@ Install python3 and pygame (for python3), then:
 ```bash
 $ python3 src/seekers.py
 ```
+
+## Documentation
+
+The documenation can be found [here](docs/documenation.md).
+
+## License
+
+You can, and are invited to, use, redistribute and modify seekers under the terms
+of the GNU General Public License (GPL), version 3 or (at your option) any
+later version published by the Free Software Foundation.
