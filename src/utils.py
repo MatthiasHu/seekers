@@ -27,4 +27,7 @@ def shuffled(xs):
 def bump(r):
   return math.exp(1 / (r**2 - 1)) if r < 1 else 0
 
+def pop_split(xs,i):
+  x = xs.pop(i)
+  return (x,xs)
 

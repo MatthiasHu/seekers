@@ -41,7 +41,9 @@ def start():
   global camps
 
   pygame.init()
-  screen = pygame.display.set_mode((world.width, world.height))
+  pygame.event.set_allowed([pygame.QUIT])
+  dimensions = (world.width,world.height)
+  screen = pygame.display.set_mode( dimensions )
   clock = pygame.time.Clock()
   random.seed(42)
 
@@ -226,11 +228,11 @@ def prepare_ai_input(player):
   global goals
   global world
   i = players.index(player)
-  other_players = copy.deepcopy(players)
-  other_players.pop(i)
-  own_seekers = copy.deepcopy(player.seekers)
-  other_seekers = copy.deepcopy(list(utils.flatten([p.seekers for p in other_players])))
-  all_seekers = copy.deepcopy(list(utils.flatten([p.seekers for p in players])))
+  all_players = copy.deepcopy(players)
+  all_seekers = list(utils.flatten([p.seekers for p in all_players]))
+  this_player, other_players = utils.pop_split(all_players,i)
+  other_seekers = list(utils.flatten([p.seekers for p in other_players]))
+  own_seekers = this_player.seekers
   return ( own_seekers
          , other_seekers
          , all_seekers
