@@ -24,6 +24,15 @@ import ctypes
 import multiprocessing as mp
 
 class Vector:
+  """
+  represents a 2d vector
+
+  You can use the usual vector operations such as addition, subtraction, scalar multiplication and scalar products.
+  These methods are accessed via `+`, `-`, `*`, `.dot(otherVector)` etc. Notice that this does not include any
+  `wrap-arounds` due to the torus, yet.
+
+  The arguments `x` and `y` are the respective coordinates.
+  """
   def __init__(self, x=0, y=0):
     self.x = x
     self.y = y
@@ -55,9 +64,19 @@ class Vector:
     return (self.x*other.x + self.y*other.y)
 
   def norm(self):
+    """
+    calculates the norm of the vector
+
+    :return: norm of this vector
+    """
     return math.sqrt(self.x*self.x + self.y*self.y)
   
   def normalized(self):
+    """
+    normalizes the vector
+
+    :return: this vector divided by its norm
+    """
     norm = self.norm()
     if (norm == 0):
       return Vector(0, 0)
@@ -65,12 +84,22 @@ class Vector:
       return Vector(self.x/norm, self.y/norm)
 
   def rotated(self):
+    """
+    rotates the vector by 90 degrees counter-clockwise
+
+    :return: the rotated vector
+    """
     return Vector(-self.y, self.x)
       
   def fmap(self, f):
     return Vector(f(self.x),f(self.y))
 
 class Physical:
+  """
+  represents a physical object that adheres to seekers dynamics
+
+  Its fields `position` and `velocity` are vectors and accessible for bots.
+  """
   mass = 1
   friction = 0.02
   max_speed = 5
@@ -119,6 +148,11 @@ class Physical:
 
 
 class Goal(Physical):
+  """
+  represents a goal to be collected by a seeker
+
+  Its fields `position` and `velocity` are vectors and can be accessed by bots.
+  """
   mass = 0.5
   radius = 6
   scoring_time = 150
@@ -149,6 +183,9 @@ class Goal(Physical):
     else: return False
 
 class Magnet:
+  """
+  represents a magnet of a seeker
+  """
   def __init__(self, strength = 0):
     self.strength = strength
 
@@ -171,6 +208,19 @@ class Magnet:
 
 
 class Seeker(Physical):
+  """
+  represents the basic game element which is controlled by the players
+
+  This class offers the main methods for bots to control the behaviour of their seekers. Its fields `position`,
+  `velocity`, `target` and `uid` are accessible to bots.
+
+  The field `target` is alterable by bots, i.e. this makes the seeker accelerate towards the target.
+
+  :Example:
+
+  >>> seeker = Seeker()
+  >>> seeker.target = Vector(10,20)
+  """
   radius = 10
   magnet_slowdown = 0.2
   disabled_time = 250
@@ -185,6 +235,11 @@ class Seeker(Physical):
     self.magnet = Magnet()
 
   def disabled(self):
+    """
+    returns whether a seeker is disabled or not
+
+    :return: Boolean
+    """
     return self.disabled_counter > 0
 
   def disable(self):
@@ -221,15 +276,24 @@ class Seeker(Physical):
     return True
 
   def set_magnet_repulsive(self):
+    """
+    turns on the magnet of this seeker in repulsive mode
+    """
     self.magnet.set_repulsive()
 
   def set_magnet_attractive(self):
+    """
+    turns on the magnet of this seeker in attractive mode
+    """
     self.magnet.set_attractive()
 
   def disable_magnet(self):
     self.magnet.disable()
 
   def set_magnet_disabled(self):
+    """
+    disables magnet of this seeker
+    """
     self.magnet.disable()
 
   def magnetic_force(self,world,pos):
@@ -247,6 +311,9 @@ class ScoreAnimation:
     self.color = color
 
 class Player:
+  """
+  represents a player
+  """
   def __init__(self, name):
     self.name = name
     self.color = string_hash_color(name)
@@ -254,6 +321,9 @@ class Player:
     self.seekers = []
 
 class World:
+  """
+  represents the game field
+  """
   def __init__(self, width, height, debug = False):
     self.width = width
     self.height = height
@@ -273,6 +343,15 @@ class World:
     return self.size_vector() / 2
 
   def torus_distance(self, left, right):
+    """
+    calculates the distance between two points on a torus
+
+    This method takes care of `wrap-arounds`.
+
+    :param left: the first point on the torus
+    :param right: the second point on the torus
+    :return: the (shortest) distance between `left` and `right`
+    """
     def dist1d(l,a,b):
       delta = abs(a-b)
       return min(delta,l-delta)
@@ -328,6 +407,9 @@ class World:
     return [ self.gen_camp(n, i, p) for i,p in enumerate(players) ] 
 
 class Camp:
+  """
+  represents a camp of a player
+  """
 
   def __init__(self, owner, position, width, height):
     self.owner = owner

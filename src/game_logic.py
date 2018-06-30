@@ -23,6 +23,15 @@ import utils
 
 
 def tick(players, camps, goals, animations, world):
+  """
+
+  :param players:
+  :param camps:
+  :param goals:
+  :param animations:
+  :param world:
+  :return:
+  """
   seekers = [s for p in players for s in p.seekers]
   # move and recover seekers
   for s in seekers:
