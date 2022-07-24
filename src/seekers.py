@@ -15,7 +15,6 @@ import sys
 import copy
 import random
 
-
 speedup_factor = 7
 screen = None
 quit = False
@@ -26,7 +25,7 @@ goals = []
 players = []
 camps = []
 animations = {"score": []}
-tournament_mode = False
+tournament_mode = True
 
 num_goals = 6
 num_seekers = 5
@@ -151,9 +150,9 @@ def main_loop():
     clock.tick(50)  # 20ms relative to last tick
 
     step += 1
-    if tournament_mode and step > 10000:
-      best_player = sorted(players, key=lambda p: p.score, reverse=True)[0]
-      print(best_player.ai.filename)
+    if tournament_mode and step > 5_000:
+      for player in sorted(players, key=lambda p: p.score, reverse=True):
+        print(str(player.score) + " P.:\t" + player.name)
       quit = True
 
 def handle_events():

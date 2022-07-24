@@ -1,6 +1,4 @@
-import hashlib
 import random
-import math
 
 # assign a nice color to a string by hashing it
 def string_hash_color(string):
@@ -27,4 +25,3 @@ def hue_color(hue):
 
 def interpolate_color(c1, c2, t):
   return [(1-t)*a + t*b for a, b in zip(c1, c2)]
-

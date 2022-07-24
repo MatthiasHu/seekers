@@ -1,10 +1,5 @@
 from seekers_types import *
 
-import random
-import copy
-import utils
-
-
 def tick(players, camps, goals, animations, world):
   seekers = [s for p in players for s in p.seekers]
   # move and recover seekers
@@ -46,12 +41,8 @@ def tick(players, camps, goals, animations, world):
       if a.age > a.duration:
         animation_list.pop(i)
 
-
 def goal_scored(player, goal_index, goals, animations, world):
   player.score += 1
   g = goals[goal_index]
   goals[goal_index] = Goal(world.random_position())
   animations["score"].append(ScoreAnimation(g.position, player.color))
-
-
-
