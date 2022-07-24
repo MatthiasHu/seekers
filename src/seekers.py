@@ -240,5 +240,4 @@ def prepare_ai_input(player):
          , copy.deepcopy(camps)
          , copy.deepcopy(world) )
 
-
 start()

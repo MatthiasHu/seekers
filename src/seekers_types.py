@@ -150,7 +150,6 @@ class Magnet:
   def disable(self):
     self.strength = 0
 
-
 class Seeker(Physical):
   radius = 10
   magnet_slowdown = 0.2

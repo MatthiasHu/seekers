@@ -3,7 +3,6 @@ from seekers_types import *
 import pygame
 import random
 
-
 player_name_images = {}
 font = None
 background_color = [0, 0, 30]
@@ -17,7 +16,6 @@ def init(players):
   for p in players:
     player_name_images[p.name] = font.render(p.name, True, p.color)
     
-
 def draw(players, camps, goals, animations, clock, world, screen):
   # clear screen
   screen.fill(background_color)
@@ -44,7 +42,6 @@ def draw(players, camps, goals, animations, clock, world, screen):
   # actually update display
   pygame.display.flip()
 
-
 def draw_seeker(seeker, player, world, screen):
   color = player.color
   pos = seeker.position
@@ -66,14 +63,12 @@ def draw_goal(goal, world, screen):
     adj_pos = pos + Vector(Goal.radius, Goal.radius) / 2
     draw_text(str(goal.uid), color, adj_pos, screen, center=False)
 
-
 def draw_text(text, color, pos, screen, center=True):
   global font
   (dx,dy) = font.size(text)
   adj_pos = pos - Vector(dx,dy) / 2 if center else pos
   screen.blit( font.render(text, False, color)
                , tuple(adj_pos) )
-
 
 def draw_halo(seeker, color, screen):
   if seeker.disabled():
@@ -91,7 +86,6 @@ def draw_halo(seeker, color, screen):
     pygame.draw.circle(screen, interpolate_color(color, [0,0,0], (mu) / 50),
       (int(seeker.position.x), int(seeker.position.y)), mu + Seeker.radius, 2)
 
-
 def draw_camps(camps, screen):
   for camp in camps:
     x,y = camp.position.x, camp.position.y
@@ -103,7 +97,6 @@ def draw_camps(camps, screen):
                    , (w, h) )
     color = camp.owner.color
     pygame.draw.rect(screen, color, r, 5)
-
 
 def draw_item(color, center, radius, world, screen):
   for (dx, dy) in repetition_offsets(world):
