@@ -16,7 +16,7 @@ pygame.event.set_allowed([pygame.QUIT])
 
 
 class SeekersGame:
-    def __init__(self, ais_locations: Iterable[str] = ("./ais",), num_goals=100, num_seekers=5, dimensions=(768, 768),
+    def __init__(self, ais_locations: Iterable[str] = ("./ais",), num_goals=5, num_seekers=5, dimensions=(768, 768),
                  tournament_length: int | None = 16384, updates_per_frame: int = 1,
                  fps=60):
         self.num_goals = num_goals
