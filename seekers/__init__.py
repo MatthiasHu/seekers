@@ -163,15 +163,18 @@ class SeekersGame:
 
     def call_ai(self, player: Player, camp: Camp):
         def warn_invalid_data():
-            print("The AI of Player "
-                  + player.name
-                  + " returned invalid data")
+            print(f"The AI of Player {player.name} returned invalid data.")
 
         own_seekers, other_seekers, all_seekers, goals, other_players, camps, world = self.get_ai_input(player)
-        new_seekers = sandboxed_ai_call(
-            player,
-            lambda: player.ai(own_seekers, other_seekers, all_seekers, goals, other_players, camp, camps, world)
-        )
+
+        try:
+            new_seekers = player.ai(own_seekers, other_seekers, all_seekers, goals, other_players, camp, camps, world)
+        except Exception:
+            print(f"The AI of Player {player.name} raised an exception:", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+
+            new_seekers = []
+
         if isinstance(new_seekers, list):
             for new, original in zip(new_seekers, player.seekers):
                 if isinstance(new, Seeker):
@@ -185,13 +188,3 @@ class SeekersGame:
     def print_scores(self):
         for player in sorted(self.players, key=lambda p: p.score, reverse=True):
             print(f"{player.score} P.:\t{player.name}")
-
-
-def sandboxed_ai_call(player, ai_call):
-    try:
-        return ai_call()
-    except Exception:
-        print(f"The AI of Player {player.name} raised an exception:", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
-
-        return []
