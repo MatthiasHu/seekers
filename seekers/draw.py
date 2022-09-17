@@ -1,4 +1,4 @@
-from seekers_types import *
+from .seekers_types import *
 
 import pygame
 import random
@@ -30,7 +30,7 @@ def draw(players, camps, goals, animations, clock, world, screen):
     for p in players:
         for s in p.seekers:
             a = s.acceleration
-            if (not s.disabled() and a.norm() > 0):
+            if (not s.disabled() and a.length() > 0):
                 draw_jet_stream(s.position, -a, world, screen)
     # draw seekers
     for p in players:
@@ -54,8 +54,6 @@ def draw_seeker(seeker, player, world, screen):
         color = interpolate_color(color, [1, 1, 1], 0.5)
     draw_item(color, pos, Seeker.radius, world, screen)
     draw_halo(seeker, color, screen)
-    if world.debug_mode:
-        draw_text(str(seeker.uid), background_color, pos, screen)
 
 
 def draw_goal(goal, world, screen):
@@ -63,9 +61,6 @@ def draw_goal(goal, world, screen):
     color = [205, 0, 250]
     pos = goal.position
     draw_item(color, pos, Goal.radius, world, screen)
-    if world.debug_mode:
-        adj_pos = pos + Vector(Goal.radius, Goal.radius) / 2
-        draw_text(str(goal.uid), color, adj_pos, screen, center=False)
 
 
 def draw_text(text, color, pos, screen, center=True):

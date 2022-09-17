@@ -1,4 +1,4 @@
-from seekers_types import *
+from .seekers_types import *
 
 
 def tick(players, camps, goals, animations, world):
@@ -8,6 +8,7 @@ def tick(players, camps, goals, animations, world):
         s.move(world)
         if s.disabled():
             s.disabled_counter -= 1
+
     # compute magnetic forces and move goals
     for g in goals:
         force = Vector(0, 0)
@@ -15,6 +16,7 @@ def tick(players, camps, goals, animations, world):
             force += s.magnetic_force(world, g.position)
         g.acceleration = force
         g.move(world)
+
     # handle collisions
     physicals = seekers + goals
     for i in range(0, len(physicals)):
@@ -29,12 +31,14 @@ def tick(players, camps, goals, animations, world):
                     Seeker.collision(s, t, world, min_dist)
                 else:
                     Physical.collision(s, t, world, min_dist)
+
     # handle goals and scoring
     for i, g in enumerate(goals):
         for camp in camps:
             if g.camp_tick(camp):
                 goal_scored(g.owner, i, goals, animations, world)
                 break
+
     # advance animations
     for _, animation_list in animations.items():
         for (i, a) in enumerate(animation_list):
