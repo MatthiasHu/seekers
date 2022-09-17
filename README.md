@@ -11,7 +11,7 @@ Based on Python 3 and pygame.
 Install python3 and pygame (for python3), then:
 
 ```bash
-$ python3 seekers/__init__.py
+$ python3 run_seekers.py
 ```
 
 ## License
