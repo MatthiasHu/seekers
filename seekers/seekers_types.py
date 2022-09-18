@@ -1,5 +1,4 @@
 from .hash_color import *
-from .utils import bump
 
 import dataclasses
 from typing import Callable
@@ -229,6 +228,9 @@ class Seeker(Physical):
         self.magnet.disable()
 
     def magnetic_force(self, world, pos: Vector) -> Vector:
+        def bump(r) -> float:
+            return math.exp(1 / (r ** 2 - 1)) if r < 1 else 0
+
         r = world.torus_distance(self.position, pos) / world.diameter()
         d = world.torus_direction(self.position, pos)
 

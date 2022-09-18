@@ -1,5 +1,5 @@
 from .seekers_types import *
-from . import game_logic, utils, draw
+from . import game_logic, draw
 
 from typing import Iterable
 import os
@@ -10,9 +10,7 @@ import sys
 import copy
 import random
 
-
 pygame.init()
-pygame.event.set_allowed([pygame.QUIT])
 
 
 class SeekersGame:
