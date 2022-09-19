@@ -253,9 +253,16 @@ DecideCallable = Callable[
 
 
 @dataclasses.dataclass
+class PlayerAI:
+    filepath: str
+    timestamp: float
+    decide_function: DecideCallable
+
+
+@dataclasses.dataclass
 class Player:
     name: str
-    ai: DecideCallable
+    ai: PlayerAI
     score: int = dataclasses.field(default=0)
     seekers: list[Seeker] = dataclasses.field(default_factory=list)
 

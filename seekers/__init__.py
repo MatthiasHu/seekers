@@ -104,7 +104,7 @@ class SeekersGame:
         return p
 
     @staticmethod
-    def load_ai(filepath: str) -> DecideCallable:
+    def load_ai(filepath: str) -> PlayerAI:
         try:
             with open(filepath) as f:
                 code = f.read()
@@ -118,11 +118,7 @@ class SeekersGame:
             except Exception as e:
                 raise Exception(f"AI {filepath!r} does not have a 'decide' function") from e
 
-            ai.filename = filepath
-            ai.timestamp = os.path.getctime(filepath)
-            ai.is_dummy = False
-
-            return ai
+            return PlayerAI(filepath, os.path.getctime(filepath), ai)
         except Exception:
             print(f"Error while loading AI {filepath!r}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
@@ -131,8 +127,8 @@ class SeekersGame:
     def call_ais(self):
         for player, camp in zip(self.players, self.camps):
             # reload ai if its file has changed
-            if os.path.getctime(player.ai.filename) > player.ai.timestamp:
-                player.ai = self.load_ai(player.ai.filename)
+            if os.path.getctime(player.ai.filepath) > player.ai.timestamp:
+                player.ai = self.load_ai(player.ai.filepath)
 
             self.call_ai(player, camp)
 
@@ -166,7 +162,7 @@ class SeekersGame:
         own_seekers, other_seekers, all_seekers, goals, other_players, camps, world = self.get_ai_input(player)
 
         try:
-            new_seekers = player.ai(own_seekers, other_seekers, all_seekers, goals, other_players, camp, camps, world)
+            new_seekers = player.ai.decide_function(own_seekers, other_seekers, all_seekers, goals, other_players, camp, camps, world)
         except Exception:
             print(f"The AI of Player {player.name} raised an exception:", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)

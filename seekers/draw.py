@@ -1,7 +1,6 @@
 from .seekers_types import *
 
 import pygame
-import random
 
 player_name_images = {}
 font = None
@@ -50,8 +49,8 @@ def draw_seeker(seeker, player, world, screen):
     pos = seeker.position
     if seeker.disabled():
         color = interpolate_color(color, [0, 0, 0], 0.5)
-    if player.ai.is_dummy:
-        color = interpolate_color(color, [1, 1, 1], 0.5)
+    # if player.ai.is_dummy:
+    #     color = interpolate_color(color, [1, 1, 1], 0.5)
     draw_item(color, pos, Seeker.radius, world, screen)
     draw_halo(seeker, color, screen)
 
