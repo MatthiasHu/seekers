@@ -139,8 +139,7 @@ class SeekersGame:
         player_i = self.players.index(player)
         this_player = all_players[player_i]
 
-        all_players.pop(player_i)
-        other_players = all_players
+        other_players = [player for player in all_players if player != this_player]
 
         all_seekers = [seeker for player in all_players for seeker in player.seekers]
         other_seekers = [seeker for player in other_players for seeker in player.seekers]
