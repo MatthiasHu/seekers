@@ -92,7 +92,7 @@ class SeekersGame:
             elif os.path.isfile(location):
                 out.append(self.load_player(location))
             else:
-                raise Exception(f"Invalid AI location: {location!r}. Neither a file nor a directory.")
+                raise Exception(f"Invalid AI location: {location!r} is neither a file nor a directory.")
 
         return out
 
