@@ -20,26 +20,33 @@ def init(players):
 def draw(players, camps, goals, animations, clock, world, screen):
     # clear screen
     screen.fill(background_color)
+
     # draw camps
     draw_camps(camps, screen)
+
     # draw goals
     for g in goals:
         draw_goal(g, world, screen)
+
     # draw jet streams
     for p in players:
         for s in p.seekers:
             a = s.acceleration
-            if (not s.is_disabled and a.length() > 0):
+            if not s.is_disabled and a.length() > 0:
                 draw_jet_stream(s.position, -a, world, screen)
+
     # draw seekers
     for p in players:
         for s in p.seekers:
             draw_seeker(s, p, world, screen)
+
     # draw animations
     for a in animations["score"]:
         draw_score_animation(a, world, screen)
+
     # draw information (player's scores, etc.)
     draw_information(players, Vector(10, 10), clock, world, screen)
+
     # actually update display
     pygame.display.flip()
 
@@ -49,8 +56,10 @@ def draw_seeker(seeker, player, world, screen):
     pos = seeker.position
     if seeker.is_disabled:
         color = interpolate_color(color, [0, 0, 0], 0.5)
+
     # if player.ai.is_dummy:
     #     color = interpolate_color(color, [1, 1, 1], 0.5)
+
     draw_item(color, pos, Seeker.radius, world, screen)
     draw_halo(seeker, color, screen)
 
@@ -66,8 +75,7 @@ def draw_text(text, color, pos, screen, center=True):
     global font
     (dx, dy) = font.size(text)
     adj_pos = pos - Vector(dx, dy) / 2 if center else pos
-    screen.blit(font.render(text, False, color)
-                , tuple(adj_pos))
+    screen.blit(font.render(text, False, color), tuple(adj_pos))
 
 
 def draw_halo(seeker, color, screen):
@@ -83,7 +91,7 @@ def draw_halo(seeker, color, screen):
 
     for offset in 0, 10, 20, 30, 40:
         mu = int(-seeker.magnet.strength * pygame.time.get_ticks() / 50 + offset) % 50
-        pygame.draw.circle(screen, interpolate_color(color, [0, 0, 0], (mu) / 50),
+        pygame.draw.circle(screen, interpolate_color(color, [0, 0, 0], mu / 50),
                            (int(seeker.position.x), int(seeker.position.y)), mu + Seeker.radius, 2)
 
 
@@ -94,24 +102,20 @@ def draw_camps(camps, screen):
         h = camp.height
         dx = w / 2
         dy = h / 2
-        r = pygame.Rect((x - dx, y - dy)
-                        , (w, h))
+        r = pygame.Rect((x - dx, y - dy), (w, h))
         color = camp.owner.color
         pygame.draw.rect(screen, color, r, 5)
 
 
 def draw_item(color, center, radius, world, screen):
     for (dx, dy) in repetition_offsets(world):
-        pygame.draw.circle(screen, color,
-                           (int(center.x + dx), int(center.y + dy)), radius)
+        pygame.draw.circle(screen, color, (int(center.x + dx), int(center.y + dy)), radius)
 
 
 def draw_jet_stream(origin, direction, world, screen):
     def line(a, b):
         for dx, dy in repetition_offsets(world):
-            pygame.draw.line(screen, [255, 255, 255],
-                             (int(a.x + dx), int(a.y + dy))
-                             , (int(b.x + dx), int(b.y + dy)))
+            pygame.draw.line(screen, [255, 255, 255], (int(a.x + dx), int(a.y + dy)), (int(b.x + dx), int(b.y + dy)))
 
     for _ in range(0, 2):
         t = Vector()
@@ -123,8 +127,7 @@ def draw_score_animation(a, world, screen):
     t = a.age / a.duration
     r = Goal.radius + 100 * t
     for dx, dy in repetition_offsets(world):
-        pygame.draw.circle(screen, a.color,
-                           (int(a.position.x + dx), int(a.position.y + dy)), int(r), 1)
+        pygame.draw.circle(screen, a.color, (int(a.position.x + dx), int(a.position.y + dy)), int(r), 1)
 
 
 def repetition_offsets(world):
@@ -143,6 +146,7 @@ def draw_information(players, pos, clock, world, screen):
         # draw fps
         fps = int(clock.get_fps())
         draw_text(str(fps), [250, 250, 250], pos, screen, center=False)
+
     dx = Vector(40, 0)
     dy = Vector(0, 30)
     pos += dy
