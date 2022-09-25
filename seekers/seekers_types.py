@@ -15,6 +15,12 @@ class Vector:
     def from_polar(angle: float, radius: float = 1) -> "Vector":
         return Vector(math.cos(angle) * radius, math.sin(angle) * radius)
 
+    def rotated(self, angle: float) -> "Vector":
+        return Vector(
+            math.cos(angle) * self.x - math.sin(angle) * self.y,
+            math.sin(angle) * self.x + math.cos(angle) * self.y,
+        )
+
     def is_vector(obj) -> bool:
         return isinstance(obj, Vector)
 
@@ -38,17 +44,29 @@ class Vector:
     def __neg__(self):
         return self * (-1)
 
-    def __mul__(self, factor: float):
+    def __mul__(self, factor):
         return Vector(self.x * factor, self.y * factor)
 
-    def __rmul__(self, other: float):
+    def __rmul__(self, other):
         return self * other
 
-    def __truediv__(self, divisor: float):
+    def __truediv__(self, divisor):
         return self * (1 / divisor)
+
+    def __rtruediv__(self, other):
+        if other == 1:
+            return Vector(1 / self.x, 1 / self.y)
+
+        return 1 / self * other
+
+    def __bool__(self):
+        return self.x or self.y
 
     def dot(self, other: "Vector") -> float:
         return self.x * other.x + self.y * other.y
+
+    def squared_length(self) -> float:
+        return self.x * self.x + self.y * self.y
 
     def length(self) -> float:
         return math.sqrt(self.x * self.x + self.y * self.y)
@@ -65,6 +83,9 @@ class Vector:
 
     def __repr__(self):
         return f"Vector({self.x}, {self.y})"
+
+    def __format__(self, format_spec):
+        return f"Vector({self.x:{format_spec}}, {self.y:{format_spec}})"
 
 
 class Physical:
@@ -152,6 +173,7 @@ class Magnet:
         return typ and val
 
     def is_on(self):
+        # TODO: to property
         return not self.strength == 0
 
     def set_repulsive(self):
@@ -177,7 +199,8 @@ class Seeker(Physical):
         self.disabled_counter = 0
         self.magnet = Magnet()
 
-    def disabled(self):
+    @property
+    def is_disabled(self):
         return self.disabled_counter > 0
 
     def disable(self):
@@ -194,16 +217,17 @@ class Seeker(Physical):
         b = self.magnet_slowdown if self.magnet.is_on() else 1
         return Physical.thrust(self) * b
 
-    def collision(s, t, world, min_dist):
-        if s.magnet.is_on():
-            s.disable()
-            if t.magnet.is_on(): t.disable()
-        elif t.magnet.is_on():
-            t.disable()
-        else:
-            s.disable()
-            t.disable()
-        Physical.collision(s, t, world, min_dist)
+    def collision(self, other: "Seeker", world, min_dist):
+        if self.magnet.is_on():
+            self.disable()
+        if other.magnet.is_on():
+            other.disable()
+
+        if not (self.magnet.is_on() or other.magnet.is_on()):
+            self.disable()
+            other.disable()
+
+        Physical.collision(self, other, world, min_dist)
 
     def copy_alterables(src, dest) -> bool:
         for attr, is_valid in Seeker.alterables:
@@ -234,7 +258,7 @@ class Seeker(Physical):
         r = world.torus_distance(self.position, pos) / world.diameter()
         d = world.torus_direction(self.position, pos)
 
-        return Vector(0, 0) if self.disabled() else - d * (self.magnet.strength * bump(r * 10))
+        return Vector(0, 0) if self.is_disabled else - d * (self.magnet.strength * bump(r * 10))
 
 
 class ScoreAnimation:

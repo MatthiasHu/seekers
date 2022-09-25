@@ -29,7 +29,7 @@ def draw(players, camps, goals, animations, clock, world, screen):
     for p in players:
         for s in p.seekers:
             a = s.acceleration
-            if (not s.disabled() and a.length() > 0):
+            if (not s.is_disabled and a.length() > 0):
                 draw_jet_stream(s.position, -a, world, screen)
     # draw seekers
     for p in players:
@@ -47,7 +47,7 @@ def draw(players, camps, goals, animations, clock, world, screen):
 def draw_seeker(seeker, player, world, screen):
     color = player.color
     pos = seeker.position
-    if seeker.disabled():
+    if seeker.is_disabled:
         color = interpolate_color(color, [0, 0, 0], 0.5)
     # if player.ai.is_dummy:
     #     color = interpolate_color(color, [1, 1, 1], 0.5)
@@ -71,7 +71,7 @@ def draw_text(text, color, pos, screen, center=True):
 
 
 def draw_halo(seeker, color, screen):
-    if seeker.disabled():
+    if seeker.is_disabled:
         return
 
     mu = abs(math.sin((int(pygame.time.get_ticks() / 30) % 50) / 50 * 2 * math.pi)) ** 2

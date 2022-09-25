@@ -6,7 +6,7 @@ def tick(players, camps, goals, animations, world):
     # move and recover seekers
     for s in seekers:
         s.move(world)
-        if s.disabled():
+        if s.is_disabled:
             s.disabled_counter -= 1
 
     # compute magnetic forces and move goals
