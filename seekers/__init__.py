@@ -124,6 +124,8 @@ class SeekersGame:
             traceback.print_exc(file=sys.stderr)
             print(file=sys.stderr)
 
+            raise NotImplementedError("Dummy AIs are not allowed")
+
     def call_ais(self):
         for player, camp in zip(self.players, self.camps):
             # reload ai if its file has changed
