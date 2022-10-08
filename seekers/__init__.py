@@ -55,7 +55,7 @@ class SeekersGame:
         self.mainloop()
 
     def mainloop(self):
-        frame = 0
+        ticks = 0
         running = True
 
         while running:
@@ -70,7 +70,7 @@ class SeekersGame:
 
                 game_logic.tick(self.players, self.camps, self.goals, self.animations, self.world)
 
-                frame += 1
+                ticks += 1
 
             # draw graphics
             draw.draw(self.players, self.camps, self.goals, self.animations, self.clock, self.world, self.screen)
@@ -78,7 +78,7 @@ class SeekersGame:
             self.clock.tick(self.fps)
 
             # end game if tournament_length has been reached
-            if self.tournament_length and frame > self.tournament_length:
+            if self.tournament_length and ticks > self.tournament_length:
                 self.print_scores()
                 running = False
 
