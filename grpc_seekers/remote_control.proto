@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option java_package = "org.seekers.grpc";
+option java_outer_classname = "RemoteControlProto";
+option objc_class_prefix = "API";
+
+package world;
+
+service RemoteControl {
+  rpc SessionStatus(SessionRequest) returns (SessionReply);
+  rpc EntityStatus(EntityRequest) returns (EntityReply);
+  rpc PlayerStatus(PlayerRequest) returns (PlayerReply);
+  rpc WorldStatus(WorldRequest) returns (WorldReply);
+  rpc CommandUnit(CommandRequest) returns (CommandReply);
+}
+
+message SessionRequest {
+  string token = 1;
+}
+
+enum SessionStatus {
+  STARTING = 0;
+  RUNNING = 1;
+  CLOSED = 2;
+}
+
+message SessionReply {
+  SessionStatus status = 1;
+}
+
+message EntityRequest {
+
+}
+
+message EntityReply {
+  map<string, SeekerStatus> seekers = 1;
+  map<string, GoalStatus> goals = 2;
+}
+
+message PlayerRequest {
+  
+}
+
+message PlayerReply {
+  map<string, PlayerStatus> players = 1;
+}
+
+message WorldRequest {
+  
+}
+
+message WorldReply {
+  map<string, CampStatus> camps = 1;
+  double width = 2;
+  double height = 3;
+}
+
+message CommandRequest {
+  string token = 1;
+  string id = 2;
+  Vector target = 3;
+  Magnet magnet = 4;
+}
+
+message CommandReply {
+  string message = 1;
+}
+
+message GoalStatus {
+  PhysicalStatus super = 1;
+  string camp_id = 2;
+  double time_owned = 3;
+}
+
+message PlayerStatus {
+  string id = 1;
+  string camp_id = 2;
+  repeated string seeker_ids = 3;
+  string color = 4;
+  int32 score  = 5;
+}
+
+message CampStatus {
+  string id = 1;
+  string player_id = 2;
+  Vector position = 3;
+  double width = 4;
+  double height = 5;
+}
+
+message SeekerStatus {
+  PhysicalStatus super = 1;
+  string player_id = 2;
+  Magnet magnet = 3;
+  Vector target = 4;
+  double disable_counter = 5;
+}
+
+enum Magnet {
+  DISABLED = 0;
+  ATTRACTIVE = 1;
+  REPULSIVE = 2;
+}
+
+message PhysicalStatus {
+  string id = 1;
+  Vector acceleration = 2;
+  Vector position = 3;
+  Vector velocity = 4;
+}
+
+message Vector {
+  double x = 1;
+  double y = 2;
+}
