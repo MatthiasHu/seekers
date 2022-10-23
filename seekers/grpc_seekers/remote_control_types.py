@@ -1,4 +1,5 @@
 import dataclasses
+import enum
 from typing import Literal
 
 
@@ -14,13 +15,7 @@ class _CampStatus:
     player_id: str
     position: _Vector
     width: float
-
-
-@dataclasses.dataclass
-class _WorldReply:
-    width: float
     height: float
-    camps: dict[str, _CampStatus]
 
 
 @dataclasses.dataclass
@@ -29,11 +24,6 @@ class _CommandRequest:
     id: str
     target: _Vector
     magnet: int
-
-
-@dataclasses.dataclass
-class _CommandReply:
-    message: str
 
 
 @dataclasses.dataclass
@@ -78,6 +68,7 @@ class _PlayerStatus:
 @dataclasses.dataclass
 class _PlayerReply:
     players: dict[str, _PlayerStatus]
+    camps: dict[str, _CampStatus]
 
 
-Magnet = Literal[0, 1, 2]
+_Magnet = Literal[0, 1, 2]
