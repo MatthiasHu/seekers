@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from .seekers_types import *
 
 import pygame
@@ -7,7 +9,7 @@ font = None
 background_color = [0, 0, 30]
 
 
-def init(players):
+def init(players: Iterable[Player]):
     global font
     global name_images
 
@@ -62,6 +64,10 @@ def draw_seeker(seeker, player, world, screen):
 
     draw_item(color, pos, Seeker.radius, world, screen)
     draw_halo(seeker, color, screen)
+
+    # TODO: game debug mode via cmd
+    # if world.debug_mode:
+    #     draw_text(seeker.id, [255, 255, 255], pos, screen)
 
 
 def draw_goal(goal, world, screen):

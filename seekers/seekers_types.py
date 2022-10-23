@@ -1,9 +1,23 @@
+import abc
+from collections import defaultdict
+
 from .hash_color import *
 
 import dataclasses
 from typing import Callable
 import math
 import random
+
+_IDS = defaultdict(list)
+
+
+def get_id(obj: str):
+    while (id_ := random.randint(0, 2 ** 32)) in _IDS[obj]:
+        ...
+
+    _IDS[obj].append(id_)
+
+    return f"py-seekers.{obj}@{id_}"
 
 
 class Vector:
@@ -94,8 +108,8 @@ class Physical:
     max_speed = 5
     base_thrust = max_speed * friction
 
-    def __init__(self, position: Vector, velocity: Vector):
-        assert isinstance(position, Vector)
+    def __init__(self, id_: str, position: Vector, velocity: Vector):
+        self.id = id_
         self.position = position
         self.velocity = velocity
         self.acceleration = Vector(0, 0)
@@ -143,8 +157,8 @@ class Goal(Physical):
     radius = 6
     scoring_time = 150
 
-    def __init__(self, position, velocity=Vector(0, 0)):
-        Physical.__init__(self, position, velocity)
+    def __init__(self, id_: str, position, velocity=Vector(0, 0)):
+        super().__init__(id_, position, velocity)
         self.position = Vector(position.x, position.y)
         self.velocity = Vector(velocity.x, velocity.y)
         self.acceleration = Vector(0, 0)
@@ -193,8 +207,8 @@ class Seeker(Physical):
     alterables = (('target', Vector.is_vector),
                   ('magnet', Magnet.is_magnet))
 
-    def __init__(self, position, velocity=Vector(0, 0)):
-        Physical.__init__(self, position, velocity)
+    def __init__(self, id_: str, position, velocity=Vector(0, 0)):
+        super().__init__(id_, position, velocity)
         self.target = self.position
         self.disabled_counter = 0
         self.magnet = Magnet()
@@ -277,7 +291,7 @@ DecideCallable = Callable[
 
 
 @dataclasses.dataclass
-class PlayerAI:
+class PlayerAI(abc.ABC):
     filepath: str
     timestamp: float
     decide_function: DecideCallable
@@ -285,6 +299,7 @@ class PlayerAI:
 
 @dataclasses.dataclass
 class Player:
+    id: str
     name: str
     ai: PlayerAI
     score: int = dataclasses.field(default=0)
@@ -361,7 +376,7 @@ class World:
         width = height = r / 5
 
         pos = self.middle() + Vector.from_polar(2 * math.pi * i / n) * r
-        return Camp(player, pos, width, height)
+        return Camp(get_id("Camp"), player, pos, width, height)
 
     def generate_camps(self, players) -> list:
         n = len(players)
@@ -370,6 +385,7 @@ class World:
 
 @dataclasses.dataclass
 class Camp:
+    id: str
     owner: Player
     position: Vector
     width: float

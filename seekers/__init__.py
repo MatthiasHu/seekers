@@ -40,11 +40,11 @@ class SeekersGame:
         random.seed(42)
 
         # initialize goals
-        self.goals = [Goal(self.world.random_position()) for _ in range(self.num_goals)]
+        self.goals = [Goal(get_id("Goal"), self.world.random_position()) for _ in range(self.num_goals)]
 
         # initialize players
         for p in self.players:
-            p.seekers = [Seeker(self.world.random_position()) for _ in range(self.num_seekers)]
+            p.seekers = [Seeker(get_id("Seeker"), self.world.random_position()) for _ in range(self.num_seekers)]
 
         # set up camps
         self.camps = self.world.generate_camps(self.players)
@@ -99,7 +99,7 @@ class SeekersGame:
     def load_player(self, filepath: str) -> Player:
         name, _ = os.path.splitext(filepath)
 
-        p = Player(name, ai=self.load_ai(filepath))
+        p = Player(get_id("Player"), name, ai=self.load_ai(filepath))
 
         return p
 
