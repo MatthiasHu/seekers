@@ -1,5 +1,5 @@
 # seekers
-Artificial intelligence programming challenge, hopefully suited for school students.
+An artificial intelligence programming challenge targeted at students.
 
 AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
 
