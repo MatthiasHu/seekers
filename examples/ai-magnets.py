@@ -1,6 +1,4 @@
-# bot
-def decide(own_seekers, other_seekers, all_seekers, goals, other_players, camp, camps, world):
-    dist = 10000
+def decide(own_seekers, other_seekers, all_seekers, goals, other_players, camp, camps, world, passed_time):
     for i, s in enumerate(own_seekers):
         g = goals[i]
         dist = world.torus_distance(g.position, s.position)
