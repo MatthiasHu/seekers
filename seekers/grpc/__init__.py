@@ -4,7 +4,7 @@ import grpc
 from grpc._channel import _InactiveRpcError
 
 from seekers import DecideCallable
-from seekers.grpc import remote_control_types as types
+from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
 import seekers
 
@@ -28,9 +28,16 @@ class ServerUnavailableError(GrpcSeekersClientError): ...
 
 class GrpcSeekersRawClient:
     def __init__(self, token: str, address: str = "localhost:7777"):
+        self.token = token
+
         self.channel = grpc.insecure_channel(address)
         self.stub = pb2_grpc.SeekersStub(self.channel)
-        self.token = token
+
+        self.channel_connectivity_status = None
+        self.channel.subscribe(self._channel_connectivity_callback, try_to_connect=True)
+
+    def _channel_connectivity_callback(self, state):
+        self.channel_connectivity_status = state
 
     def join_session(self) -> str:
         """Try to join the game and return our player_id."""
@@ -57,7 +64,10 @@ class GrpcSeekersRawClient:
         return self.stub.PlayerStatus(PlayerRequest())
 
     def send_command(self, id_: str, target: Vector, magnet: float) -> None:
-        self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
+        if self.channel_connectivity_status == grpc.ChannelConnectivity.READY:
+            self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
+        else:
+            raise ServerUnavailableError("Channel is not ready.")
 
     def __del__(self):
         self.channel.close()
