@@ -9,9 +9,6 @@ from seekers.grpc.converters import *
 import seekers
 
 import logging
-import sys
-
-logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, style="{", format="[{levelname}] {message}")
 
 
 class GrpcSeekersClientError(Exception): ...
@@ -64,10 +61,20 @@ class GrpcSeekersRawClient:
         return self.stub.PlayerStatus(PlayerRequest())
 
     def send_command(self, id_: str, target: Vector, magnet: float) -> None:
-        if self.channel_connectivity_status == grpc.ChannelConnectivity.READY:
-            self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
-        else:
+        if self.channel_connectivity_status != grpc.ChannelConnectivity.READY:
             raise ServerUnavailableError("Channel is not ready.")
+
+        try:
+            self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
+        except _InactiveRpcError as e:
+            if e.code() == grpc.StatusCode.CANCELLED:
+                # We don't know, why this happens.
+                # The CommandUnit service is called
+                # though, so we can just ignore the error.
+                ...
+            else:
+                raise
+
 
     def __del__(self):
         self.channel.close()
@@ -92,66 +99,69 @@ class GrpcSeekersClient:
 
     def mainloop(self):
         while 1:
-            entity_reply = self.client.entities()
-            if entity_reply.passed_playtime == self.last_gametime:
-                continue
+            self.tick()
 
-            if (entity_reply.passed_playtime - self.last_gametime) > 1:
-                self._logger.warning(f"Missed {entity_reply.passed_playtime - self.last_gametime} ticks.")
+    def tick(self):
+        entity_reply = self.client.entities()
+        if entity_reply.passed_playtime == self.last_gametime:
+            return
 
-            self.last_gametime = entity_reply.passed_playtime
+        if (entity_reply.passed_playtime - self.last_gametime) > 1:
+            self._logger.warning(f"Missed {entity_reply.passed_playtime - self.last_gametime} ticks.")
 
-            props = self.client.server_properties()
+        self.last_gametime = entity_reply.passed_playtime
 
-            player_reply = self.client.players_info()
+        props = self.client.server_properties()
 
-            all_seekers, goals = entity_reply.seekers, entity_reply.goals
-            camps, players = player_reply.camps, player_reply.players
+        player_reply = self.client.players_info()
 
-            try:
-                own_player = players[self.player_id]
-            except IndexError as e:
-                raise GrpcSeekersClientError("Invalid Response: Own player_id not in PlayerReply.players")
+        all_seekers, goals = entity_reply.seekers, entity_reply.goals
+        camps, players = player_reply.camps, player_reply.players
 
-            # self._logger.debug(
-            #     f"Own seekers: {len(own_seekers)}, other seekers: {len(other_seekers)}, Teams: {len(players)}")
+        try:
+            own_player = players[self.player_id]
+        except IndexError as e:
+            raise GrpcSeekersClientError("Invalid Response: Own player_id not in PlayerReply.players")
 
-            converted_seekers = {seeker_id: convert_seeker(seeker, props) for seeker_id, seeker in all_seekers.items()}
+        # self._logger.debug(
+        #     f"Own seekers: {len(own_seekers)}, other seekers: {len(other_seekers)}, Teams: {len(players)}")
 
-            converted_players = {player_id: convert_player(player, converted_seekers) for player_id, player in
-                                 players.items()}
+        converted_seekers = {seeker_id: convert_seeker(seeker, props) for seeker_id, seeker in all_seekers.items()}
 
-            converted_camps = {player_id: convert_camp(camp, converted_players) for player_id, camp in camps.items()}
+        converted_players = {player_id: convert_player(player, converted_seekers) for player_id, player in
+                             players.items()}
 
-            converted_goals = [convert_goal(goal, props) for goal in goals.values()]
+        converted_camps = {player_id: convert_camp(camp, converted_players) for player_id, camp in camps.items()}
 
-            converted_my_seekers = [converted_seekers[seeker_id] for seeker_id in own_player.seeker_ids]
-            converted_other_seekers = [converted_seekers[seeker_id] for seeker_id in all_seekers if
-                                       seeker_id not in own_player.seeker_ids]
+        converted_goals = [convert_goal(goal, props) for goal in goals.values()]
 
-            converted_other_players = [converted_players[player_id] for player_id in players if
-                                       player_id != self.player_id]
+        converted_my_seekers = [converted_seekers[seeker_id] for seeker_id in own_player.seeker_ids]
+        converted_other_seekers = [converted_seekers[seeker_id] for seeker_id in all_seekers if
+                                   seeker_id not in own_player.seeker_ids]
 
-            try:
-                converted_own_camp = converted_camps[own_player.camp_id]
-            except IndexError as e:
-                raise GrpcSeekersClientError("Invalid Response: Own camp not in PlayerReply.camps") from e
+        converted_other_players = [converted_players[player_id] for player_id in players if
+                                   player_id != self.player_id]
 
-            converted_world = seekers.World(float(props["map.width"]), float(props["map.height"]))
+        try:
+            converted_own_camp = converted_camps[own_player.camp_id]
+        except IndexError as e:
+            raise GrpcSeekersClientError("Invalid Response: Own camp not in PlayerReply.camps") from e
 
-            new_seekers = self.decide_function(
-                converted_my_seekers,
-                converted_other_seekers,
-                list(converted_seekers.values()),
-                converted_goals,
-                converted_other_players,
-                converted_own_camp,
-                list(converted_camps.values()),
-                converted_world,
-                entity_reply.passed_playtime,
-            )
+        converted_world = seekers.World(float(props["map.width"]), float(props["map.height"]))
 
-            self.send_updates(new_seekers)
+        new_seekers = self.decide_function(
+            converted_my_seekers,
+            converted_other_seekers,
+            list(converted_seekers.values()),
+            converted_goals,
+            converted_other_players,
+            converted_own_camp,
+            list(converted_camps.values()),
+            converted_world,
+            entity_reply.passed_playtime,
+        )
+
+        self.send_updates(new_seekers)
 
     def send_updates(self, new_seekers: list[seekers.Seeker]):
         cur_time = time.perf_counter()

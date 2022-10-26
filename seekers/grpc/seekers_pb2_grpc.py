@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import seekers_pb2 as seekers__pb2
+from . import seekers_pb2 as seekers__pb2
 
 
 class SeekersStub(object):
