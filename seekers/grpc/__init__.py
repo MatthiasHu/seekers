@@ -1,3 +1,5 @@
+import time
+
 import grpc
 from grpc._channel import _InactiveRpcError
 
@@ -25,17 +27,18 @@ class ServerUnavailableError(GrpcSeekersClientError): ...
 
 
 class GrpcSeekersRawClient:
-    def __init__(self, address: str = "localhost:7777"):
+    def __init__(self, token: str, address: str = "localhost:7777"):
         self.channel = grpc.insecure_channel(address)
         self.stub = pb2_grpc.SeekersStub(self.channel)
+        self.token = token
 
-    def join_session(self, ai_name: str) -> str:
+    def join_session(self) -> str:
         """Try to join the game and return our player_id."""
         try:
-            return self.stub.JoinSession(SessionRequest(token=ai_name)).id
+            return self.stub.JoinSession(SessionRequest(token=self.token)).id
         except _InactiveRpcError as e:
             if e.code() == grpc.StatusCode.UNAUTHENTICATED:
-                raise SessionTokenInvalidError(f"Session token {ai_name=} is invalid. It can't be empty.") from e
+                raise SessionTokenInvalidError(f"Session token {self.token=} is invalid. It can't be empty.") from e
             elif e.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
                 raise GameFullError("The game is full.") from e
             elif e.code() == grpc.StatusCode.UNAVAILABLE:
@@ -53,34 +56,44 @@ class GrpcSeekersRawClient:
     def players_info(self) -> types._PlayerReply:
         return self.stub.PlayerStatus(PlayerRequest())
 
-    def send_command(self, player_id: str, id_: str, target: Vector, magnet: float) -> None:
-        self.stub.CommandUnit(CommandRequest(token=player_id, id=id_, target=target, magnet=magnet))
+    def send_command(self, id_: str, target: Vector, magnet: float) -> None:
+        self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
 
     def __del__(self):
         self.channel.close()
 
 
 class GrpcSeekersClient:
-    def __init__(self, ai_name: str, decide_function: DecideCallable, address: str = "localhost:7777"):
+    def __init__(self, token: str, decide_function: DecideCallable, address: str = "localhost:7777"):
         self.decide_function = decide_function
 
         self._logger = logging.getLogger(self.__class__.__name__)
 
-        self.client = GrpcSeekersRawClient(address)
+        self.client = GrpcSeekersRawClient(token, address)
 
-        self._logger.debug(f"Joining session as {ai_name!r}...")
-        self.player_id = self.client.join_session(ai_name)
-        self.ai_name = ai_name
+        self._logger.debug(f"Joining session with {token=}...")
+        self.player_id = self.client.join_session()
 
         self._logger.debug(f"Joined session as {self.player_id=}")
 
         self._logger.debug(f"Properties: {self.client.server_properties()!r}")
 
+        self.last_gametime = 0
+
     def mainloop(self):
         while 1:
             entity_reply = self.client.entities()
-            player_reply = self.client.players_info()
+            if entity_reply.passed_playtime == self.last_gametime:
+                continue
+
+            if (entity_reply.passed_playtime - self.last_gametime) > 1:
+                self._logger.warning(f"Missed {entity_reply.passed_playtime - self.last_gametime} ticks.")
+
+            self.last_gametime = entity_reply.passed_playtime
+
             props = self.client.server_properties()
+
+            player_reply = self.client.players_info()
 
             all_seekers, goals = entity_reply.seekers, entity_reply.goals
             camps, players = player_reply.camps, player_reply.players
@@ -124,24 +137,32 @@ class GrpcSeekersClient:
                 converted_other_players,
                 converted_own_camp,
                 list(converted_camps.values()),
-                converted_world
+                converted_world,
+                entity_reply.passed_playtime,
             )
 
             self.send_updates(new_seekers)
 
     def send_updates(self, new_seekers: list[seekers.Seeker]):
-        self._logger.debug(f"Sending {len(new_seekers)} commands")
+        cur_time = time.perf_counter()
+        # if self._last_update:
+        #     dt = cur_time - self._last_update
+        #     self._logger.debug(f"Last update took {dt:.3f}s ({1 / dt:.0f}Hz)")
+
+        self._last_update = cur_time
 
         for seeker in new_seekers:
             try:
-                self.client.send_command(self.ai_name, seeker.id, convert_vector_back(seeker.target), seeker.magnet.strength)
+                self.client.send_command(seeker.id, convert_vector_back(seeker.target), seeker.magnet.strength)
             except _InactiveRpcError as e:
                 if e.code() == grpc.StatusCode.CANCELLED:
-                    self._logger.warning("Received CANCELLED")
+                    self._logger.error("Server responded with CANCELLED on CommandUnit.")
                 else:
                     raise
 
-    print(f"Game Over.")
+
+def main():
+    ...
 
 
 if __name__ == "__main__":

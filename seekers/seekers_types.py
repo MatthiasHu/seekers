@@ -346,8 +346,8 @@ class InternalSeeker(InternalPhysical, Seeker):
 
 
 DecideCallable = Callable[
-    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World"], list[Seeker]
-    # my seekers   other seekers all seekers   goals       other_players   my camp camps         world     new my seekers
+    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float], list[Seeker]
+    # my seekers   other seekers all seekers   goals       other_players   my camp camps         world    time    new my seekers
 ]
 
 
