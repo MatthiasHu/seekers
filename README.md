@@ -8,7 +8,7 @@ Based on Python 3 and pygame.
 This repository contains a Python implementation of the Seekers gRPC server as well as a gRPC Seekers client library. 
 
 ## How to run
-Install python3 and the packages in [`requirements.txt`](requirements.txt)
+Install python3 and the packages in [`requirements.txt`](requirements.txt).
 
 ### Run a Python Server
 This will run the server and start the specified AIs.
