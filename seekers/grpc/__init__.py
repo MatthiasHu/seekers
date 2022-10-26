@@ -1,14 +1,12 @@
-import time
-
 import grpc
 from grpc._channel import _InactiveRpcError
+import time
+import logging
 
 from seekers import DecideCallable
 from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
 import seekers
-
-import logging
 
 
 class GrpcSeekersClientError(Exception): ...
@@ -74,7 +72,6 @@ class GrpcSeekersRawClient:
                 ...
             else:
                 raise
-
 
     def __del__(self):
         self.channel.close()
@@ -179,11 +176,3 @@ class GrpcSeekersClient:
                     self._logger.error("Server responded with CANCELLED on CommandUnit.")
                 else:
                     raise
-
-
-def main():
-    ...
-
-
-if __name__ == "__main__":
-    main()
