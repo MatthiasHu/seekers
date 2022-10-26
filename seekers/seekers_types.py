@@ -1,12 +1,13 @@
-import abc
-from collections import defaultdict
-
 from .hash_color import *
 
-import dataclasses
-from typing import Callable
+import configparser
 import math
 import random
+from collections import defaultdict
+
+from typing import Callable
+import dataclasses
+import abc
 
 _IDS = defaultdict(list)
 
@@ -18,6 +19,79 @@ def get_id(obj: str):
     _IDS[obj].append(id_)
 
     return f"py-seekers.{obj}@{id_}"
+
+
+@dataclasses.dataclass(frozen=True)
+class Config:
+    global_auto_play: bool
+    global_playtime: int
+    global_speed: int
+    global_players: int
+    global_seekers: int
+    global_goals: int
+
+    map_width: int
+    map_height: int
+
+    camp_width: int
+    camp_height: int
+
+    physical_max_speed: float
+    physical_friction: float
+
+    seeker_magnet_slowdown: float
+    seeker_disabled_time: int
+    seeker_radius: float
+    seeker_mass: float
+
+    goal_scoring_time: int
+    goal_radius: float
+    goal_mass: float
+
+    @property
+    def updates_per_frame(self):
+        return self.global_speed
+
+    @property
+    def map_dimensions(self):
+        return self.map_width, self.map_height
+
+    @classmethod
+    def from_file(cls, file) -> "Config":
+        cp = configparser.ConfigParser()
+        cp.read_file(file)
+
+        return cls(
+            global_auto_play=cp.getboolean("global", "auto-play"),
+            global_playtime=cp.getint("global", "playtime"),
+            global_speed=cp.getint("global", "speed"),
+            global_players=cp.getint("global", "players"),
+            global_seekers=cp.getint("global", "seekers"),
+            global_goals=cp.getint("global", "goals"),
+
+            map_width=cp.getint("map", "width"),
+            map_height=cp.getint("map", "height"),
+
+            camp_width=cp.getint("camp", "width"),
+            camp_height=cp.getint("camp", "height"),
+
+            physical_max_speed=cp.getfloat("physical", "max-speed"),
+            physical_friction=cp.getfloat("physical", "friction"),
+
+            seeker_magnet_slowdown=cp.getfloat("seeker", "magnet-slowdown"),
+            seeker_disabled_time=cp.getint("seeker", "disabled-time"),
+            seeker_radius=cp.getfloat("seeker", "radius"),
+            seeker_mass=cp.getfloat("seeker", "mass"),
+
+            goal_scoring_time=cp.getint("goal", "scoring-time"),
+            goal_radius=cp.getfloat("goal", "radius"),
+            goal_mass=cp.getfloat("goal", "mass")
+        )
+
+    @classmethod
+    def from_filepath(cls, filepath: str) -> "Config":
+        with open(filepath) as f:
+            return cls.from_file(f)
 
 
 class Vector:
@@ -34,9 +108,6 @@ class Vector:
             math.cos(angle) * self.x - math.sin(angle) * self.y,
             math.sin(angle) * self.x + math.cos(angle) * self.y,
         )
-
-    def is_vector(obj) -> bool:
-        return isinstance(obj, Vector)
 
     def __iter__(self):
         return iter((self.x, self.y))
@@ -103,23 +174,26 @@ class Vector:
 
 
 class Physical:
-    mass = 1
-    friction = 0.02
-    max_speed = 5
-    base_thrust = max_speed * friction
-
-    def __init__(self, id_: str, position: Vector, velocity: Vector):
+    def __init__(self, id_: str, position: Vector, velocity: Vector, mass: float, radius: float):
         self.id = id_
         self.position = position
         self.velocity = velocity
         self.acceleration = Vector(0, 0)
+        self.mass = mass
+        self.radius = radius
+
+
+class InternalPhysical(Physical):
+    def __init__(self, id_: str, position: Vector, velocity: Vector, mass: float, radius: float, config: Config):
+        super().__init__(id_, position, velocity, mass, radius)
+        self.config = config
 
     def update_acceleration(self, world: "World") -> Vector:
         ...
 
     def move(self, world: "World"):
         # friction
-        self.velocity *= 1 - self.friction
+        self.velocity *= 1 - self.config.physical_friction
 
         # acceleration
         self.update_acceleration(world)
@@ -130,49 +204,47 @@ class Physical:
 
         world.normalize_position(self.position)
 
-    def thrust(self):
-        return self.base_thrust
+    def thrust(self) -> float:
+        return self.config.physical_max_speed * self.config.physical_friction
 
-    def collision(self, other: "Physical", world: "World", min_dist: float):
+    def collision(self, other: "InternalPhysical", world: "World"):
+        min_dist = self.radius + other.radius
+
         # elastic collision
         d = world.torus_difference(self.position, other.position)
-        if d.length() != 0:
-            dn = d.normalized()
-            dv = other.velocity - self.velocity
-            m = 2 / (self.mass + other.mass)
 
-            dvdn = dv.dot(dn)
-            if dvdn < 0:
-                self.velocity += dn * (m * other.mass * dvdn)
-                other.velocity -= dn * (m * self.mass * dvdn)
+        dn = d.normalized()
+        dv = other.velocity - self.velocity
+        m = 2 / (self.mass + other.mass)
 
-            ddn = d.dot(dn)
-            if ddn < min_dist:
-                self.position += dn * (ddn - min_dist)
-                other.position -= dn * (ddn - min_dist)
+        dvdn = dv.dot(dn)
+        if dvdn < 0:
+            self.velocity += dn * (m * other.mass * dvdn)
+            other.velocity -= dn * (m * self.mass * dvdn)
+
+        ddn = d.dot(dn)
+        if ddn < min_dist:
+            self.position += dn * (ddn - min_dist)
+            other.position -= dn * (ddn - min_dist)
 
 
-class Goal(Physical):
-    mass = 0.5
-    radius = 6
-    scoring_time = 150
+class Goal(Physical): ...
 
-    def __init__(self, id_: str, position, velocity=Vector(0, 0)):
-        super().__init__(id_, position, velocity)
-        self.position = Vector(position.x, position.y)
-        self.velocity = Vector(velocity.x, velocity.y)
-        self.acceleration = Vector(0, 0)
+
+class InternalGoal(InternalPhysical, Goal):
+    def __init__(self, id_: str, position: Vector, velocity: Vector, config: Config):
+        super().__init__(id_, position, velocity, config.goal_mass, config.goal_radius, config)
         self.owner = None
         self.owned_for = 0
 
-    def camp_tick(self, camp):
+    def camp_tick(self, camp: "Camp"):
         if camp.contains(self.position):
             if self.owner == camp.owner:
                 self.owned_for += 1
             else:
                 self.owned_for = 0
                 self.owner = camp.owner
-            return self.owned_for >= self.scoring_time
+            return self.owned_for >= self.config.goal_scoring_time
         else:
             return False
 
@@ -181,10 +253,15 @@ class Magnet:
     def __init__(self, strength=0):
         self.strength = strength
 
-    def is_magnet(obj):
-        typ = isinstance(obj, Magnet) and isinstance(obj.strength, int)
-        val = 1 >= obj.strength >= -8
-        return typ and val
+    @property
+    def strength(self):
+        return self._strength
+
+    @strength.setter
+    def strength(self, value):
+        assert 1 >= value >= -8
+
+        self._strength = value
 
     def is_on(self):
         # TODO: to property
@@ -201,14 +278,8 @@ class Magnet:
 
 
 class Seeker(Physical):
-    radius = 10
-    magnet_slowdown = 0.2
-    disabled_time = 250
-    alterables = (('target', Vector.is_vector),
-                  ('magnet', Magnet.is_magnet))
-
-    def __init__(self, id_: str, position, velocity=Vector(0, 0)):
-        super().__init__(id_, position, velocity)
+    def __init__(self, id_: str, position: Vector, velocity: Vector, mass: float, radius: float):
+        super().__init__(id_, position, velocity, mass, radius)
         self.target = self.position
         self.disabled_counter = 0
         self.magnet = Magnet()
@@ -217,42 +288,16 @@ class Seeker(Physical):
     def is_disabled(self):
         return self.disabled_counter > 0
 
-    def disable(self):
-        self.disabled_counter = Seeker.disabled_time
+    def magnetic_force(self, world, pos: Vector) -> Vector:
+        def bump(r) -> float:
+            return math.exp(1 / (r ** 2 - 1)) if r < 1 else 0
 
-    def update_acceleration(self, world):
-        if self.disabled_counter == 0:
-            a = world.torus_direction(self.position, self.target)
-            self.acceleration = a
-        else:
-            self.acceleration = Vector(0, 0)
+        r = world.torus_distance(self.position, pos) / world.diameter()
+        d = world.torus_direction(self.position, pos)
 
-    def thrust(self):
-        b = self.magnet_slowdown if self.magnet.is_on() else 1
-        return Physical.thrust(self) * b
+        return Vector(0, 0) if self.is_disabled else - d * (self.magnet.strength * bump(r * 10))
 
-    def collision(self, other: "Seeker", world, min_dist):
-        if self.magnet.is_on():
-            self.disable()
-        if other.magnet.is_on():
-            other.disable()
-
-        if not (self.magnet.is_on() or other.magnet.is_on()):
-            self.disable()
-            other.disable()
-
-        Physical.collision(self, other, world, min_dist)
-
-    def copy_alterables(src, dest) -> bool:
-        for attr, is_valid in Seeker.alterables:
-            fallback = getattr(dest, attr)
-            val = getattr(src, attr, fallback)
-            if is_valid(val):
-                setattr(dest, attr, val)
-            else:
-                return False
-        return True
-
+    # TODO: deprecate all methods below
     def set_magnet_repulsive(self):
         self.magnet.set_repulsive()
 
@@ -265,28 +310,44 @@ class Seeker(Physical):
     def set_magnet_disabled(self):
         self.magnet.disable()
 
-    def magnetic_force(self, world, pos: Vector) -> Vector:
-        def bump(r) -> float:
-            return math.exp(1 / (r ** 2 - 1)) if r < 1 else 0
 
-        r = world.torus_distance(self.position, pos) / world.diameter()
-        d = world.torus_direction(self.position, pos)
+class InternalSeeker(InternalPhysical, Seeker):
+    def __init__(self, id_: str, position: Vector, velocity: Vector, config: Config):
+        super().__init__(id_, position, velocity, config.seeker_mass, config.seeker_radius, config)
+        self.target = self.position
+        self.disabled_counter = 0
+        self.magnet = Magnet()
 
-        return Vector(0, 0) if self.is_disabled else - d * (self.magnet.strength * bump(r * 10))
+    def disable(self):
+        self.disabled_counter = self.config.seeker_disabled_time
 
+    def update_acceleration(self, world):
+        if self.disabled_counter == 0:
+            a = world.torus_direction(self.position, self.target)
+            self.acceleration = a
+        else:
+            self.acceleration = Vector(0, 0)
 
-class ScoreAnimation:
-    duration = 20
+    def thrust(self) -> float:
+        b = self.config.seeker_magnet_slowdown if self.magnet.is_on() else 1
+        return InternalPhysical.thrust(self) * b
 
-    def __init__(self, position, color):
-        self.position = position
-        self.age = 0
-        self.color = color
+    def collision(self, other: "InternalSeeker", world):
+        if self.magnet.is_on():
+            self.disable()
+        if other.magnet.is_on():
+            other.disable()
+
+        if not (self.magnet.is_on() or other.magnet.is_on()):
+            self.disable()
+            other.disable()
+
+        InternalPhysical.collision(self, other, world)
 
 
 DecideCallable = Callable[
-    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World"],
-    list[Seeker]
+    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World"], list[Seeker]
+    # my seekers   other seekers all seekers   goals       other_players   my camp camps         world     new my seekers
 ]
 
 
@@ -301,9 +362,25 @@ class PlayerAI(abc.ABC):
 class Player:
     id: str
     name: str
-    ai: PlayerAI
     score: int = dataclasses.field(default=0)
     seekers: list[Seeker] = dataclasses.field(default_factory=list)
+    _color = None
+
+    @property
+    def color(self):
+        if self._color:
+            return self._color
+
+        return string_hash_color(self.name)
+
+
+@dataclasses.dataclass
+class InternalPlayer:
+    id: str
+    name: str
+    ai: PlayerAI
+    score: int = dataclasses.field(default=0)
+    seekers: list[InternalSeeker] = dataclasses.field(default_factory=list)
 
     @property
     def color(self):
@@ -324,7 +401,7 @@ class World:
     def geometry(self) -> Vector:
         return Vector(self.width, self.height)
 
-    def diameter(self):
+    def diameter(self) -> float:
         return self.geometry.length()
 
     def middle(self) -> Vector:
@@ -343,8 +420,8 @@ class World:
             delta = abs(a - b)
             return b - a if delta < l - delta else a - b
 
-        return Vector(diff1d(self.width, left.x, right.x)
-                      , diff1d(self.height, left.y, right.y))
+        return Vector(diff1d(self.width, left.x, right.x),
+                      diff1d(self.height, left.y, right.y))
 
     def torus_direction(self, left: Vector, right: Vector, /) -> Vector:
         return self.torus_difference(left, right).normalized()
@@ -379,8 +456,7 @@ class World:
         return Camp(get_id("Camp"), player, pos, width, height)
 
     def generate_camps(self, players) -> list:
-        n = len(players)
-        return [self.gen_camp(n, i, p) for i, p in enumerate(players)]
+        return [self.gen_camp(len(players), i, p) for i, p in enumerate(players)]
 
 
 @dataclasses.dataclass

@@ -1,7 +1,8 @@
+from .draw import ScoreAnimation, Animation
 from .seekers_types import *
 
 
-def tick(players, camps, goals, animations, world):
+def tick(players: list[InternalPlayer], camps: list[Camp], goals: list[InternalGoal], animations: list[Animation], world: World):
     seekers = [s for p in players for s in p.seekers]
     # move and recover seekers
     for s in seekers:
@@ -18,19 +19,22 @@ def tick(players, camps, goals, animations, world):
         g.move(world)
 
     # handle collisions
+    # noinspection PyTypeChecker
     physicals = seekers + goals
-    for i in range(0, len(physicals)):
-        s = physicals[i]
-        for j in range(i + 1, len(physicals)):
-            t = physicals[j]
-            d = world.torus_distance(t.position, s.position)
-            min_dist = s.radius + t.radius
-            # ^ bit of a hack; will only work with seekers and goals
+    for phys1 in physicals:
+        for phys2 in physicals:
+            if phys1 is phys2:
+                continue
+
+            d = world.torus_distance(phys2.position, phys1.position)
+
+            min_dist = phys1.radius + phys2.radius
+
             if d < min_dist:
-                if isinstance(s, Seeker) and isinstance(t, Seeker):
-                    Seeker.collision(s, t, world, min_dist)
+                if isinstance(phys1, InternalSeeker) and isinstance(phys2, InternalSeeker):
+                    InternalSeeker.collision(phys1, phys2, world)
                 else:
-                    Physical.collision(s, t, world, min_dist)
+                    InternalPhysical.collision(phys1, phys2, world)
 
     # handle goals and scoring
     for i, g in enumerate(goals):
@@ -47,8 +51,11 @@ def tick(players, camps, goals, animations, world):
                 animation_list.pop(i)
 
 
-def goal_scored(player, goal_index, goals, animations, world):
+def goal_scored(player: InternalPlayer, goal_index: int, goals: list[Goal], animations: list[Animation], world: World):
     player.score += 1
-    g = goals[goal_index]
-    goals[goal_index] = Goal(world.random_position())
-    animations["score"].append(ScoreAnimation(g.position, player.color))
+
+    goal = goals[goal_index]
+    goal.id_ = get_id("Goal")
+    goal.position = world.random_position()
+
+    animations.append(ScoreAnimation(goal.position, player.color))

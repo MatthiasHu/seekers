@@ -1,5 +1,4 @@
 import dataclasses
-import enum
 from typing import Literal
 
 
@@ -19,14 +18,6 @@ class _CampStatus:
 
 
 @dataclasses.dataclass
-class _CommandRequest:
-    token: int
-    id: str
-    target: _Vector
-    magnet: int
-
-
-@dataclasses.dataclass
 class _PhysicalStatus:
     id: str
     acceleration: _Vector
@@ -38,7 +29,7 @@ class _PhysicalStatus:
 class _SeekerStatus:
     super: _PhysicalStatus
     player_id: str
-    magnet: int
+    magnet: float
     target: _Vector
     disable_counter: float
 
@@ -54,6 +45,7 @@ class _GoalStatus:
 class _EntityReply:
     seekers: dict[str, _SeekerStatus]
     goals: dict[str, _GoalStatus]
+    passed_playtime: float
 
 
 @dataclasses.dataclass
@@ -69,6 +61,3 @@ class _PlayerStatus:
 class _PlayerReply:
     players: dict[str, _PlayerStatus]
     camps: dict[str, _CampStatus]
-
-
-_Magnet = Literal[0, 1, 2]

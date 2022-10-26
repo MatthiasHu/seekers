@@ -1,15 +1,44 @@
-from typing import Iterable
+import pygame
 
 from .seekers_types import *
 
-import pygame
+from typing import Iterable
 
 player_name_images = {}
 font = None
 background_color = [0, 0, 30]
 
+Color = tuple[int, int, int] | list[int]
 
-def init(players: Iterable[Player]):
+
+class Animation(abc.ABC):
+    duration: float
+
+    def __init__(self):
+        self.age = 0
+
+    @abc.abstractmethod
+    def draw(self, world, screen):
+        ...
+
+
+class ScoreAnimation(Animation):
+    duration = 20
+
+    def __init__(self, position: Vector, color: Color, radius: float):
+        super().__init__()
+        self.position = position
+        self.color = color
+        self.radius = radius
+
+    def draw(self, world, screen):
+        t = self.age / self.duration
+        r = self.radius + 100 * t
+        for dx, dy in repetition_offsets(world):
+            pygame.draw.circle(screen, self.color, (int(self.position.x + dx), int(self.position.y + dy)), int(r), 1)
+
+
+def init(players: Iterable[InternalPlayer]):
     global font
     global name_images
 
@@ -19,7 +48,9 @@ def init(players: Iterable[Player]):
         player_name_images[p.name] = font.render(p.name, True, p.color)
 
 
-def draw(players, camps, goals, animations, clock, world, screen):
+def draw(players: Iterable[InternalPlayer], camps: Iterable[Camp], goals: Iterable[InternalGoal],
+         animations: list[Animation], clock: pygame.time.Clock, world: World,
+         screen: pygame.Surface):
     # clear screen
     screen.fill(background_color)
 
@@ -35,7 +66,7 @@ def draw(players, camps, goals, animations, clock, world, screen):
         for s in p.seekers:
             a = s.acceleration
             if not s.is_disabled and a.length() > 0:
-                draw_jet_stream(s.position, -a, world, screen)
+                draw_jet_stream(s, -a, world, screen)
 
     # draw seekers
     for p in players:
@@ -43,8 +74,8 @@ def draw(players, camps, goals, animations, clock, world, screen):
             draw_seeker(s, p, world, screen)
 
     # draw animations
-    for a in animations["score"]:
-        draw_score_animation(a, world, screen)
+    for animation in animations:
+        animation.draw(world, screen)
 
     # draw information (player's scores, etc.)
     draw_information(players, Vector(10, 10), clock, world, screen)
@@ -55,14 +86,13 @@ def draw(players, camps, goals, animations, clock, world, screen):
 
 def draw_seeker(seeker, player, world, screen):
     color = player.color
-    pos = seeker.position
     if seeker.is_disabled:
         color = interpolate_color(color, [0, 0, 0], 0.5)
 
     # if player.ai.is_dummy:
     #     color = interpolate_color(color, [1, 1, 1], 0.5)
 
-    draw_item(color, pos, Seeker.radius, world, screen)
+    draw_item(color, seeker.position, seeker.radius, world, screen)
     draw_halo(seeker, color, screen)
 
     # TODO: game debug mode via cmd
@@ -77,20 +107,20 @@ def draw_goal(goal, world, screen):
     draw_item(color, pos, Goal.radius, world, screen)
 
 
-def draw_text(text, color, pos, screen, center=True):
+def draw_text(text: str, color: Color, pos: Vector, screen: pygame.Surface, center=True):
     global font
     (dx, dy) = font.size(text)
     adj_pos = pos - Vector(dx, dy) / 2 if center else pos
     screen.blit(font.render(text, False, color), tuple(adj_pos))
 
 
-def draw_halo(seeker, color, screen):
+def draw_halo(seeker: InternalSeeker, color: Color, screen: pygame.Surface):
     if seeker.is_disabled:
         return
 
     mu = abs(math.sin((int(pygame.time.get_ticks() / 30) % 50) / 50 * 2 * math.pi)) ** 2
     pygame.draw.circle(screen, interpolate_color(color, [0, 0, 0], mu),
-                       (int(seeker.position.x), int(seeker.position.y)), 3 + Seeker.radius, 3)
+                       (int(seeker.position.x), int(seeker.position.y)), 3 + seeker.radius, 3)
 
     if not seeker.magnet.is_on():
         return
@@ -98,10 +128,10 @@ def draw_halo(seeker, color, screen):
     for offset in 0, 10, 20, 30, 40:
         mu = int(-seeker.magnet.strength * pygame.time.get_ticks() / 50 + offset) % 50
         pygame.draw.circle(screen, interpolate_color(color, [0, 0, 0], mu / 50),
-                           (int(seeker.position.x), int(seeker.position.y)), mu + Seeker.radius, 2)
+                           (int(seeker.position.x), int(seeker.position.y)), mu + seeker.radius, 2)
 
 
-def draw_camps(camps, screen):
+def draw_camps(camps: Iterable[Camp], screen: pygame.Surface):
     for camp in camps:
         x, y = camp.position.x, camp.position.y
         w = camp.width
@@ -113,30 +143,23 @@ def draw_camps(camps, screen):
         pygame.draw.rect(screen, color, r, 5)
 
 
-def draw_item(color, center, radius, world, screen):
+def draw_item(color: Color, center: Vector, radius: float, world: World, screen: pygame.Surface):
     for (dx, dy) in repetition_offsets(world):
         pygame.draw.circle(screen, color, (int(center.x + dx), int(center.y + dy)), radius)
 
 
-def draw_jet_stream(origin, direction, world, screen):
+def draw_jet_stream(seeker: InternalSeeker, direction: Vector, world: World, screen: pygame.Surface):
     def line(a, b):
         for dx, dy in repetition_offsets(world):
             pygame.draw.line(screen, [255, 255, 255], (int(a.x + dx), int(a.y + dy)), (int(b.x + dx), int(b.y + dy)))
 
     for _ in range(0, 2):
         t = Vector()
-        l = Seeker.radius * 3
-        line(origin + t, origin + direction * l + t)
+        l = seeker.radius * 3
+        line(seeker.position + t, seeker.position + direction * l + t)
 
 
-def draw_score_animation(a, world, screen):
-    t = a.age / a.duration
-    r = Goal.radius + 100 * t
-    for dx, dy in repetition_offsets(world):
-        pygame.draw.circle(screen, a.color, (int(a.position.x + dx), int(a.position.y + dy)), int(r), 1)
-
-
-def repetition_offsets(world):
+def repetition_offsets(world: World):
     l = []
     for ix in [-1, 0, 1]:
         for iy in [-1, 0, 1]:
@@ -144,7 +167,8 @@ def repetition_offsets(world):
     return l
 
 
-def draw_information(players, pos, clock, world, screen):
+def draw_information(players: Iterable[InternalPlayer], pos: Vector, clock: pygame.time.Clock, world: World,
+                     screen: pygame.Surface):
     global name_images
     global font
 

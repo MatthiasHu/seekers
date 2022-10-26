@@ -3,12 +3,12 @@ syntax = "proto3";
 option java_multiple_files = true;
 option optimize_for = SPEED;
 option java_package = "org.seekers.grpc";
-option java_outer_classname = "RemoteControlProto";
+option java_outer_classname = "SeekersProto";
 option objc_class_prefix = "API";
 
 package world;
 
-service RemoteControl {
+service Seekers {
   rpc JoinSession(SessionRequest) returns (SessionReply);
   rpc PropertiesInfo(PropertiesRequest) returns (PropertiesReply);
   rpc EntityStatus(EntityRequest) returns (EntityReply);
@@ -39,6 +39,7 @@ message EntityRequest {
 message EntityReply {
   map<string, SeekerStatus> seekers = 1;
   map<string, GoalStatus> goals = 2;
+  double passed_playtime = 3;
 }
 
 message PlayerRequest {
@@ -54,11 +55,11 @@ message CommandRequest {
   string id = 1;
   string token = 2;
   Vector target = 3;
-  Magnet magnet = 4;
+  double magnet = 4;
 }
 
 message CommandReply {
-  string message = 1;
+
 }
 
 message GoalStatus {
@@ -86,15 +87,9 @@ message CampStatus {
 message SeekerStatus {
   PhysicalStatus super = 1;
   string player_id = 2;
-  Magnet magnet = 3;
+  double magnet = 3;
   Vector target = 4;
   double disable_counter = 5;
-}
-
-enum Magnet {
-  DISABLED = 0;
-  ATTRACTIVE = 1;
-  REPULSIVE = 2;
 }
 
 message PhysicalStatus {
