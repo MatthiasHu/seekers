@@ -1,9 +1,12 @@
+from multiprocessing import Process
 import argparse
 import os.path
-from collections import defaultdict
-from multiprocessing import Process
+import sys
+import logging
 
 import seekers.grpc
+
+from collections import defaultdict
 
 
 def main():
@@ -14,6 +17,8 @@ def main():
     parser.add_argument("ai_files", type=str, nargs="+", help="Paths to the ais.")
 
     args = parser.parse_args()
+
+    logging.basicConfig(level=args.loglevel, style="{", format="[{levelname}] {message}", stream=sys.stdout)
 
     _AIS = defaultdict(int)
 
@@ -30,21 +35,23 @@ def main():
     processes = []
 
     for arg in args.ai_files:
-        with open(arg) as f:
-            mod = compile(f.read(), os.path.abspath(arg), "exec")
-
         name = ai_name(arg)
 
-        mod_dict = {}
-        exec(mod, mod_dict)
-        decide = mod_dict["decide"]
+        def run_ai(filepath: str, name: str):
+            with open(filepath) as f:
+                mod = compile(f.read(), os.path.abspath(arg), "exec")
 
-        def run_ai():
+
+            mod_dict = {}
+            exec(mod, mod_dict)
+            decide = mod_dict["decide"]
+
             seekers.grpc.GrpcSeekersClient(name, decide, args.address).mainloop()
 
         processes.append(
             Process(
                 target=run_ai,
+                args=(arg, name),
                 daemon=True,
                 name=f"AI {name!r}"
             )
