@@ -60,7 +60,7 @@ class GrpcSeekersRawClient:
 
     def send_command(self, id_: str, target: Vector, magnet: float) -> None:
         if self.channel_connectivity_status != grpc.ChannelConnectivity.READY:
-            raise ServerUnavailableError("Channel is not ready.")
+            raise ServerUnavailableError("Channel is not ready. Or game ended.")
 
         try:
             self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
@@ -169,10 +169,4 @@ class GrpcSeekersClient:
         self._last_update = cur_time
 
         for seeker in new_seekers:
-            try:
-                self.client.send_command(seeker.id, convert_vector_back(seeker.target), seeker.magnet.strength)
-            except _InactiveRpcError as e:
-                if e.code() == grpc.StatusCode.CANCELLED:
-                    self._logger.error("Server responded with CANCELLED on CommandUnit.")
-                else:
-                    raise
+            self.client.send_command(seeker.id, convert_vector_back(seeker.target), seeker.magnet.strength)
