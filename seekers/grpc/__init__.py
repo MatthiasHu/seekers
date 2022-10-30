@@ -104,7 +104,7 @@ class GrpcSeekersClient:
             return
 
         if (entity_reply.passed_playtime - self.last_gametime) > 1:
-            self._logger.warning(f"Missed {entity_reply.passed_playtime - self.last_gametime} ticks.")
+            self._logger.info(f"Missed time: {entity_reply.passed_playtime - self.last_gametime}")
 
         self.last_gametime = entity_reply.passed_playtime
 
