@@ -18,8 +18,6 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=args.loglevel, style="{", format="[{levelname}] {message}", stream=sys.stdout)
-
     _AIS = defaultdict(int)
 
     def ai_name(filepath: str) -> str:
@@ -41,10 +39,11 @@ def main():
             with open(filepath) as f:
                 mod = compile(f.read(), os.path.abspath(arg), "exec")
 
-
             mod_dict = {}
             exec(mod, mod_dict)
             decide = mod_dict["decide"]
+
+            logging.basicConfig(level=args.loglevel, style="{", format=f"[{name.ljust(18)}] {{levelname}}: {{message}}", stream=sys.stdout)
 
             seekers.grpc.GrpcSeekersClient(name, decide, args.address).mainloop()
 
