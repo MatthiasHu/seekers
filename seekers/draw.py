@@ -1,5 +1,6 @@
 import pygame
 
+from .hash_color import interpolate_color
 from .seekers_types import *
 
 from typing import Iterable
@@ -104,7 +105,7 @@ def draw_goal(goal, world, screen):
     global font
     color = [205, 0, 250]
     pos = goal.position
-    draw_item(color, pos, Goal.radius, world, screen)
+    draw_item(color, pos, goal.radius, world, screen)
 
 
 def draw_text(text: str, color: Color, pos: Vector, screen: pygame.Surface, center=True):

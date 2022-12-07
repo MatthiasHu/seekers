@@ -44,11 +44,11 @@ def tick(players: list[InternalPlayer], camps: list[Camp], goals: list[InternalG
                 break
 
     # advance animations
-    for _, animation_list in animations.items():
-        for (i, a) in enumerate(animation_list):
-            a.age += 1
-            if a.age > a.duration:
-                animation_list.pop(i)
+    for i, animation in enumerate(animations):
+        animation.age += 1
+
+        if animation.age >= animation.duration:
+            animations.pop(i)
 
 
 def goal_scored(player: InternalPlayer, goal_index: int, goals: list[Goal], animations: list[Animation], world: World):

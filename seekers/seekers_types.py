@@ -1,13 +1,17 @@
-from .hash_color import *
-
+import os
+import sys
+import threading
+import traceback
+from multiprocessing.pool import ThreadPool
 import configparser
 import math
-import random
 from collections import defaultdict
-
 from typing import Callable
 import dataclasses
 import abc
+import random
+
+from .hash_color import string_hash_color
 
 _IDS = defaultdict(list)
 
@@ -24,6 +28,7 @@ def get_id(obj: str):
 @dataclasses.dataclass(frozen=True)
 class Config:
     global_auto_play: bool
+    global_wait_for_players: bool
     global_playtime: int
     global_speed: int
     global_players: int
@@ -63,6 +68,7 @@ class Config:
 
         return cls(
             global_auto_play=cp.getboolean("global", "auto-play"),
+            global_wait_for_players=cp.getboolean("global", "wait-for-players"),
             global_playtime=cp.getint("global", "playtime"),
             global_speed=cp.getint("global", "speed"),
             global_players=cp.getint("global", "players"),
@@ -248,6 +254,9 @@ class InternalGoal(InternalPhysical, Goal):
         else:
             return False
 
+    def to_ai_input(self) -> Goal:
+        return Goal(self.id, self.position, self.velocity, self.mass, self.radius)
+
 
 class Magnet:
     def __init__(self, strength=0):
@@ -344,18 +353,18 @@ class InternalSeeker(InternalPhysical, Seeker):
 
         InternalPhysical.collision(self, other, world)
 
+    def to_ai_input(self) -> Seeker:
+        return Seeker(self.id, self.position, self.velocity, self.mass, self.radius)
 
+
+AIInput = tuple[
+    list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float
+]
 DecideCallable = Callable[
-    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float], list[Seeker]
+    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float], list[
+        Seeker]
     # my seekers   other seekers all seekers   goals       other_players   my camp camps         world    time    new my seekers
 ]
-
-
-@dataclasses.dataclass
-class PlayerAI(abc.ABC):
-    filepath: str
-    timestamp: float
-    decide_function: DecideCallable
 
 
 @dataclasses.dataclass
@@ -375,16 +384,141 @@ class Player:
 
 
 @dataclasses.dataclass
-class InternalPlayer:
+class InternalPlayer(abc.ABC):
     id: str
     name: str
-    ai: PlayerAI
-    score: int = dataclasses.field(default=0)
-    seekers: list[InternalSeeker] = dataclasses.field(default_factory=list)
+    score: int
+    seekers: list[InternalSeeker]
 
     @property
     def color(self):
         return string_hash_color(self.name)
+
+    def to_ai_input(self) -> Player:
+        return Player(self.id, self.name, self.score, [s.to_ai_input() for s in self.seekers])
+
+    @abc.abstractmethod
+    def update_ai_action(self, wait: bool | ThreadPool, world: "World", goals: list[InternalGoal],
+                         camps: list["Camp"], time: float):
+        ...
+
+
+class InvalidAiOutputException(Exception): ...
+
+
+@dataclasses.dataclass
+class LocalPlayerAI:
+    filepath: str
+    timestamp: float
+    decide_function: DecideCallable
+
+    @classmethod
+    def from_file(cls, filepath: str) -> "LocalPlayerAI":
+        try:
+            with open(filepath) as f:
+                code = f.read()
+            mod = compile(code, filepath, "exec")
+
+            try:
+                mod_dict = {}
+                exec(mod, mod_dict)
+
+                ai = mod_dict["decide"]
+            except Exception as e:
+                raise Exception(f"AI {filepath!r} does not have a 'decide' function") from e
+
+            return cls(filepath, os.path.getctime(filepath), ai)
+        except Exception:
+            print(f"Error while loading AI {filepath!r}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            print(file=sys.stderr)
+
+            raise NotImplementedError("Dummy AIs are not allowed")
+
+
+@dataclasses.dataclass
+class LocalPlayer(InternalPlayer):
+    ai: LocalPlayerAI
+
+    def get_ai_input(self,
+                     world: "World",
+                     _goals: list[InternalGoal],
+                     _camps: list["Camp"],
+                     time: float
+                     ) -> AIInput:
+        camps = [c.to_ai_input() for c in _camps]
+        players: list[Player] = [c.owner for c in camps]
+
+        all_seekers = [s for p in players for s in p.seekers]
+        my_camp = next(c for c in camps if c.owner.id == self.id)
+        my_seekers: list[Seeker] = my_camp.owner.seekers
+        other_camps = [c for c in camps if c.owner.id != self.id]
+        other_seekers = [s for p in players for s in p.seekers]
+
+        goals = [g.to_ai_input() for g in _goals]
+
+        return my_seekers, other_seekers, all_seekers, goals, players, my_camp, camps, world, time
+
+    def _update_ai_action(self, world: "World", goals: list[InternalGoal], camps: list["Camp"], time: float):
+        ai_input = self.get_ai_input(world, goals, camps, time)
+
+        ai_output = self.ai.decide_function(*ai_input)
+
+        if not isinstance(ai_output, list):
+            raise InvalidAiOutputException(f"AI output must be a list, not {type(ai_output)!r}.")
+
+        if len(ai_output) != len(self.seekers):
+            raise InvalidAiOutputException(f"AI output length must be {len(self.seekers)}, not {len(ai_output)}.")
+
+        for own_seeker, ai_seeker in zip(self.seekers, ai_output):
+            if not isinstance(ai_seeker, Seeker):
+                raise InvalidAiOutputException(f"AI output must be a list of Seekers, not {type(ai_seeker)!r}.")
+
+            if not isinstance(ai_seeker.target, Vector):
+                raise InvalidAiOutputException(
+                    f"AI output Seeker target must be a Vector, not {type(ai_seeker.target)!r}.")
+
+            if not isinstance(ai_seeker.magnet, Magnet):
+                raise InvalidAiOutputException(
+                    f"AI output Seeker magnet must be a Magnet, not {type(ai_seeker.magnet)!r}.")
+
+            own_seeker.target = Vector(ai_seeker.target.x, ai_seeker.target.y)
+            own_seeker.magnet = Magnet(ai_seeker.magnet.strength)
+
+    def update_ai_action(self, wait: bool | ThreadPool, world: "World", goals: list[InternalGoal],
+                         camps: list["Camp"], time: float):
+
+        if wait:
+            wait: ThreadPool
+            wait.apply_async(self._update_ai_action, (world, goals, camps, time))
+
+        else:
+            self._update_ai_action(world, goals, camps, time)
+
+    @classmethod
+    def from_file(cls, filepath: str) -> "LocalPlayer":
+        name, _ = os.path.splitext(filepath)
+
+        return LocalPlayer(get_id("Player"), name, score=0, seekers=[], ai=LocalPlayerAI.from_file(filepath))
+
+class GRPCClientPlayer(InternalPlayer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.was_updated = threading.Event()
+
+    def wait_for_update(self):
+        was_updated = self.was_updated.wait(5)
+
+        if not was_updated:
+            raise TimeoutError("GRPCClientPlayer did not update in time. (Timeout is 5 seconds)")
+
+        self.was_updated.clear()
+
+    def update_ai_action(self, wait: bool | ThreadPool, world: "World", goals: list[InternalGoal],
+                         camps: list["Camp"], time: float):
+        if wait:
+            wait: ThreadPool
+            wait.apply_async(self.wait_for_update)
 
 
 class World:
@@ -462,7 +596,7 @@ class World:
 @dataclasses.dataclass
 class Camp:
     id: str
-    owner: Player
+    owner: InternalPlayer | Player
     position: Vector
     width: float
     height: float
@@ -470,3 +604,6 @@ class Camp:
     def contains(self, pos: Vector) -> bool:
         delta = self.position - pos
         return 2 * abs(delta.x) < self.width and 2 * abs(delta.y) < self.height
+
+    def to_ai_input(self) -> "Camp":
+        return Camp(self.id, self.owner.to_ai_input(), self.position, self.width, self.height)
