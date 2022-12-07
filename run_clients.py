@@ -3,18 +3,19 @@ import argparse
 import os.path
 import sys
 import logging
+from collections import defaultdict
 
 import seekers.grpc
 
-from collections import defaultdict
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Run seekers AIs as clients.')
+    parser = argparse.ArgumentParser(description='Run python seekers AIs as gRPC clients.')
     parser.add_argument("-address", "-a", type=str, default="localhost:7777",
                         help="Address of the server. (default: localhost:7777)")
-    parser.add_argument("-loglevel", "-log", "-l", type=str, default="ERROR")
-    parser.add_argument("ai_files", type=str, nargs="+", help="Paths to the ais.")
+    parser.add_argument("-loglevel", "-log", "-l", type=str, default="ERROR",
+                        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
+    parser.add_argument("ai_files", type=str, nargs="+", help="Paths to the AIs.")
 
     args = parser.parse_args()
 
