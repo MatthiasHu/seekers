@@ -1,7 +1,7 @@
 from .seekers_types import *
 from . import game_logic, draw
 
-from typing import Iterable
+import typing
 import os
 import glob
 import pygame
@@ -11,7 +11,7 @@ pygame.init()
 
 
 class SeekersGame:
-    def __init__(self, local_ai_locations: Iterable[str], config: Config, fps=60):
+    def __init__(self, local_ai_locations: typing.Iterable[str], config: Config, fps=60):
         self.config = config
         self.fps = fps
 
@@ -83,10 +83,10 @@ class SeekersGame:
             self._mainloop(thread_pool)
 
     @staticmethod
-    def load_local_players(ais_locations: Iterable[str]) -> list[InternalPlayer]:
+    def load_local_players(ai_locations: typing.Iterable[str]) -> list[InternalPlayer]:
         out: list[InternalPlayer] = []
 
-        for location in ais_locations:
+        for location in ai_locations:
             if os.path.isdir(location):
                 for filename in glob.glob(os.path.join(location, "ai*.py")):
                     out.append(LocalPlayer.from_file(filename))

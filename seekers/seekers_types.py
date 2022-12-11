@@ -2,14 +2,14 @@ import os
 import sys
 import threading
 import traceback
-from multiprocessing.pool import ThreadPool
 import configparser
 import math
-from collections import defaultdict
-from typing import Callable
 import dataclasses
 import abc
 import random
+import typing
+from multiprocessing.pool import ThreadPool
+from collections import defaultdict
 
 from .hash_color import string_hash_color
 
@@ -169,7 +169,7 @@ class Vector:
         else:
             return Vector(self.x / norm, self.y / norm)
 
-    def map(self, func: Callable[[float], float]) -> "Vector":
+    def map(self, func: typing.Callable[[float], float]) -> "Vector":
         return Vector(func(self.x), func(self.y))
 
     def __repr__(self):
@@ -360,7 +360,7 @@ class InternalSeeker(InternalPhysical, Seeker):
 AIInput = tuple[
     list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float
 ]
-DecideCallable = Callable[
+DecideCallable = typing.Callable[
     [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float], list[
         Seeker]
     # my seekers   other seekers all seekers   goals       other_players   my camp camps         world    time    new my seekers
@@ -452,7 +452,6 @@ class LocalPlayer(InternalPlayer):
         all_seekers = [s for p in players for s in p.seekers]
         my_camp = next(c for c in camps if c.owner.id == self.id)
         my_seekers: list[Seeker] = my_camp.owner.seekers
-        other_camps = [c for c in camps if c.owner.id != self.id]
         other_seekers = [s for p in players for s in p.seekers]
 
         goals = [g.to_ai_input() for g in _goals]
@@ -470,7 +469,15 @@ class LocalPlayer(InternalPlayer):
         if len(ai_output) != len(self.seekers):
             raise InvalidAiOutputException(f"AI output length must be {len(self.seekers)}, not {len(ai_output)}.")
 
-        for own_seeker, ai_seeker in zip(self.seekers, ai_output):
+        for ai_seeker in ai_output:
+            try:
+                own_seeker = next(s for s in self.seekers if s.id == ai_seeker.id)
+                # TODO: organize seekers in dict for this to be faster
+            except StopIteration as e:
+                raise InvalidAiOutputException(
+                    f"AI output contains a seeker with id {ai_seeker.id!r} which is not one of the player's seekers."
+                ) from e
+
             if not isinstance(ai_seeker, Seeker):
                 raise InvalidAiOutputException(f"AI output must be a list of Seekers, not {type(ai_seeker)!r}.")
 
@@ -485,7 +492,7 @@ class LocalPlayer(InternalPlayer):
             own_seeker.target = Vector(ai_seeker.target.x, ai_seeker.target.y)
             own_seeker.magnet = Magnet(ai_seeker.magnet.strength)
 
-    def update_ai_action(self, wait: bool | ThreadPool, world: "World", goals: list[InternalGoal],
+    def update_ai_action(self, wait: typing.Literal[False] | ThreadPool, world: "World", goals: list[InternalGoal],
                          camps: list["Camp"], time: float):
 
         if wait:
@@ -501,6 +508,7 @@ class LocalPlayer(InternalPlayer):
 
         return LocalPlayer(get_id("Player"), name, score=0, seekers=[], ai=LocalPlayerAI.from_file(filepath))
 
+
 class GRPCClientPlayer(InternalPlayer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -514,10 +522,9 @@ class GRPCClientPlayer(InternalPlayer):
 
         self.was_updated.clear()
 
-    def update_ai_action(self, wait: bool | ThreadPool, world: "World", goals: list[InternalGoal],
+    def update_ai_action(self, wait: typing.Literal[False] | ThreadPool, world: "World", goals: list[InternalGoal],
                          camps: list["Camp"], time: float):
         if wait:
-            wait: ThreadPool
             wait.apply_async(self.wait_for_update)
 
 
