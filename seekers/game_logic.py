@@ -1,9 +1,11 @@
+import typing
+
 from .draw import ScoreAnimation, Animation
 from .seekers_types import *
 
 
-def tick(players: list[InternalPlayer], camps: list[Camp], goals: list[InternalGoal], animations: list[Animation], world: World):
-    seekers = [s for p in players for s in p.seekers]
+def tick(players: typing.Iterable[InternalPlayer], camps: list[Camp], goals: list[InternalGoal], animations: list[Animation], world: World):
+    seekers = [s for p in players for s in p.seekers.values()]
     # move and recover seekers
     for s in seekers:
         s.move(world)
@@ -40,7 +42,7 @@ def tick(players: list[InternalPlayer], camps: list[Camp], goals: list[InternalG
     for i, g in enumerate(goals):
         for camp in camps:
             if g.camp_tick(camp):
-                goal_scored(g.owner, i, goals, animations, world)
+                goal_scored(camp.owner, i, goals, animations, world)
                 break
 
     # advance animations
@@ -58,4 +60,4 @@ def goal_scored(player: InternalPlayer, goal_index: int, goals: list[Goal], anim
     goal.id_ = get_id("Goal")
     goal.position = world.random_position()
 
-    animations.append(ScoreAnimation(goal.position, player.color))
+    animations.append(ScoreAnimation(goal.position, player.color, goal.radius))

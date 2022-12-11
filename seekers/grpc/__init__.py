@@ -1,12 +1,13 @@
+from multiprocessing.pool import ThreadPool
 import grpc
 from grpc._channel import _InactiveRpcError
 import time
 import logging
 
-from seekers import DecideCallable
+import seekers
+from seekers import string_hash_color
 from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
-import seekers
 
 
 class GrpcSeekersClientError(Exception): ...
@@ -39,8 +40,10 @@ class GrpcSeekersRawClient:
         try:
             return self.stub.JoinSession(SessionRequest(token=self.token)).id
         except _InactiveRpcError as e:
-            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+            if e.code() in [grpc.StatusCode.UNAUTHENTICATED, grpc.StatusCode.INVALID_ARGUMENT]:
                 raise SessionTokenInvalidError(f"Session token {self.token=} is invalid. It can't be empty.") from e
+            elif e.code() == grpc.StatusCode.ALREADY_EXISTS:
+                raise SessionTokenInvalidError(f"Session token {self.token=} is already in use.") from e
             elif e.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
                 raise GameFullError("The game is full.") from e
             elif e.code() == grpc.StatusCode.UNAVAILABLE:
@@ -66,8 +69,8 @@ class GrpcSeekersRawClient:
             self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
         except _InactiveRpcError as e:
             if e.code() == grpc.StatusCode.CANCELLED:
-                # We don't know, why this happens.
-                # The CommandUnit service is called
+                # We don't know why this happens.
+                # The CommandUnit procedure is called
                 # though, so we can just ignore the error.
                 ...
             else:
@@ -78,7 +81,7 @@ class GrpcSeekersRawClient:
 
 
 class GrpcSeekersClient:
-    def __init__(self, token: str, decide_function: DecideCallable, address: str = "localhost:7777"):
+    def __init__(self, token: str, decide_function: seekers.DecideCallable, address: str = "localhost:7777"):
         self.decide_function = decide_function
 
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -118,7 +121,7 @@ class GrpcSeekersClient:
         try:
             own_player = players[self.player_id]
         except IndexError as e:
-            raise GrpcSeekersClientError("Invalid Response: Own player_id not in PlayerReply.players")
+            raise GrpcSeekersClientError("Invalid Response: Own player_id not in PlayerReply.players.") from e
 
         # self._logger.debug(
         #     f"Own seekers: {len(own_seekers)}, other seekers: {len(other_seekers)}, Teams: {len(players)}")
@@ -130,7 +133,7 @@ class GrpcSeekersClient:
 
         converted_camps = {player_id: convert_camp(camp, converted_players) for player_id, camp in camps.items()}
 
-        converted_goals = [convert_goal(goal, props) for goal in goals.values()]
+        converted_goals = [convert_goal(goal, props, list(converted_camps.values())) for goal in goals.values()]
 
         converted_my_seekers = [converted_seekers[seeker_id] for seeker_id in own_player.seeker_ids]
         converted_other_seekers = [converted_seekers[seeker_id] for seeker_id in all_seekers if
@@ -142,9 +145,12 @@ class GrpcSeekersClient:
         try:
             converted_own_camp = converted_camps[own_player.camp_id]
         except IndexError as e:
-            raise GrpcSeekersClientError("Invalid Response: Own camp not in PlayerReply.camps") from e
+            raise GrpcSeekersClientError("Invalid Response: Own camp not in PlayerReply.camps.") from e
 
-        converted_world = seekers.World(float(props["map.width"]), float(props["map.height"]))
+        try:
+            converted_world = seekers.World(float(props["map.width"]), float(props["map.height"]))
+        except KeyError as e:
+            raise GrpcSeekersClientError("Invalid Response: Essential properties missing.") from e
 
         new_seekers = self.decide_function(
             converted_my_seekers,

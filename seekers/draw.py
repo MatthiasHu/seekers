@@ -64,14 +64,14 @@ def draw(players: Iterable[InternalPlayer], camps: Iterable[Camp], goals: Iterab
 
     # draw jet streams
     for p in players:
-        for s in p.seekers:
+        for s in p.seekers.values():
             a = s.acceleration
             if not s.is_disabled and a.length() > 0:
                 draw_jet_stream(s, -a, world, screen)
 
     # draw seekers
     for p in players:
-        for s in p.seekers:
+        for s in p.seekers.values():
             draw_seeker(s, p, world, screen)
 
     # draw animations

@@ -46,7 +46,28 @@ def convert_seeker(seeker: types._SeekerStatus, props: dict[str, str]) -> seeker
     return out
 
 
-def convert_goal(goal: types._GoalStatus, props: dict[str, str]) -> seekers.Goal:
+def convert_physical_back(physical: seekers.Physical) -> PhysicalStatus:
+    return PhysicalStatus(
+        id=physical.id,
+        acceleration=convert_vector_back(physical.acceleration),
+        velocity=convert_vector_back(physical.velocity),
+        position=convert_vector_back(physical.position)
+    )
+
+
+def convert_seeker_back(seeker: seekers.InternalSeeker) -> SeekerStatus:
+    out = SeekerStatus(
+        super=convert_physical_back(seeker),
+        player_id=seeker.owner.id,
+        magnet=seeker.magnet.strength,
+        target=convert_vector_back(seeker.target),
+        disable_counter=seeker.disabled_counter
+    )
+
+    return out
+
+
+def convert_goal(goal: types._GoalStatus, props: dict[str, str], camps: list[seekers.Camp]) -> seekers.Goal:
     out = seekers.Goal(
         goal.super.id,
         convert_vector(goal.super.position),
@@ -55,13 +76,26 @@ def convert_goal(goal: types._GoalStatus, props: dict[str, str]) -> seekers.Goal
         float(props["goal.radius"])
     )
 
-    out.scoring_time = goal.time_owned
+    out.owned_for = goal.time_owned
+    out.owned_by = next((camp for camp in camps if camp.owner.id == goal.camp_id), None)
 
     return out
 
 
+def convert_goal_back(goal: seekers.InternalGoal) -> GoalStatus:
+    return GoalStatus(
+        super=convert_physical_back(goal),
+        camp_id=goal.owner.id,
+        time_owned=goal.owned_for
+    )
+
+
 def convert_color(color: str):
     return tuple(int(color[i:i + 2], base=16) for i in (2, 4, 6))
+
+
+def convert_color_back(color: tuple[int, int, int]):
+    return f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
 
 
 def convert_player(player: types._PlayerStatus, all_seekers: dict[str, seekers.Seeker]) -> seekers.Player:
@@ -75,6 +109,16 @@ def convert_player(player: types._PlayerStatus, all_seekers: dict[str, seekers.S
     out._color = convert_color(player.color)
 
     return out
+
+
+def convert_player_back(player: seekers.Player) -> PlayerStatus:
+    return PlayerStatus(
+        id=player.id,
+        camp_id=player.camp.id,
+        color=convert_color_back(player.color),
+        score=player.score,
+        seeker_ids=[seeker.id for seeker in player.seekers.values()]
+    )
 
 
 def convert_camp(camp: types._CampStatus, all_players: dict[str, seekers.Player]) -> seekers.Camp:
