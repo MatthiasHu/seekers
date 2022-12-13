@@ -1,9 +1,9 @@
 # seekers
 * An artificial intelligence programming challenge targeted at students.
-
 * AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
-
 * Based on Python 3 and pygame.
+
+![Screenshot_20221213_193620](https://user-images.githubusercontent.com/37810842/207417325-30e82c8b-b53b-44e7-9d41-ca431dc579e2.png)
 
 ## This repository contains
 1. Python implementation of the Seekers game
