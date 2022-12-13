@@ -1,9 +1,9 @@
 # seekers
-An artificial intelligence programming challenge targeted at students.
+* An artificial intelligence programming challenge targeted at students.
 
-AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
+* AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
 
-Based on Python 3 and pygame.
+* Based on Python 3 and pygame.
 
 ## This repository contains
 1. Python implementation of the Seekers game
@@ -28,7 +28,7 @@ $ python3 run_seekers.py <AI files>
 ```
 
 ### Run a Python AI as a Seekers gRPC client
-You will need a separate server running. This can the server above, or, for example, [the Java implementation](https://github.com/seekers-dev/seekers-api).
+You will need a separate server running. This can be the server above, or, for example, [the Java implementation](https://github.com/seekers-dev/seekers-api).
 
 ```bash
 $ python3 run_clients.py <AI files>
