@@ -30,13 +30,15 @@ def convert_vector_back(vector: seekers.Vector) -> Vector:
     return Vector(x=vector.x, y=vector.y)
 
 
-def convert_seeker(seeker: types._SeekerStatus, props: dict[str, str]) -> seekers.Seeker:
+def convert_seeker(seeker: types._SeekerStatus, owner: seekers.Player, config: seekers.Config) -> seekers.Seeker:
     out = seekers.Seeker(
-        seeker.super.id,
-        convert_vector(seeker.super.position),
-        convert_vector(seeker.super.velocity),
-        float(props["seeker.mass"]),
-        float(props["seeker.radius"])
+        id_=seeker.super.id,
+        position=convert_vector(seeker.super.position),
+        velocity=convert_vector(seeker.super.velocity),
+        mass=config.seeker_mass,
+        radius=config.seeker_radius,
+        owner=owner,
+        config=config
     )
 
     out.magnet.strength = seeker.magnet
@@ -67,17 +69,21 @@ def convert_seeker_back(seeker: seekers.InternalSeeker) -> SeekerStatus:
     return out
 
 
-def convert_goal(goal: types._GoalStatus, props: dict[str, str], camps: list[seekers.Camp]) -> seekers.Goal:
+def convert_goal(goal: types._GoalStatus, camps: dict[str, seekers.Camp], config: seekers.Config) -> seekers.Goal:
     out = seekers.Goal(
-        goal.super.id,
-        convert_vector(goal.super.position),
-        convert_vector(goal.super.velocity),
-        float(props["goal.mass"]),
-        float(props["goal.radius"])
+        id_=goal.super.id,
+        position=convert_vector(goal.super.position),
+        velocity=convert_vector(goal.super.velocity),
+        mass=config.goal_mass,
+        radius=config.goal_radius,
+        config=config
     )
 
     out.owned_for = goal.time_owned
-    out.owned_by = next((camp for camp in camps if camp.owner.id == goal.camp_id), None)
+    if goal.camp_id in camps:
+        out.owner = camps[goal.camp_id].owner
+    else:
+        out.owner = None
 
     return out
 
@@ -85,28 +91,31 @@ def convert_goal(goal: types._GoalStatus, props: dict[str, str], camps: list[see
 def convert_goal_back(goal: seekers.InternalGoal) -> GoalStatus:
     return GoalStatus(
         super=convert_physical_back(goal),
-        camp_id=goal.owner.id,
+        camp_id=goal.owner.id if goal.owner else "",
         time_owned=goal.owned_for
     )
 
 
-def convert_color(color: str):
+def convert_color(color: str) -> tuple[int, int, int]:
+    if len(color) != 8:
+        from seekers.grpc import GrpcSeekersClientError
+        raise GrpcSeekersClientError(f"Invalid Response: Invalid color: {color!r}")
+    # noinspection PyTypeChecker
     return tuple(int(color[i:i + 2], base=16) for i in (2, 4, 6))
 
 
 def convert_color_back(color: tuple[int, int, int]):
-    return f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+    return f"0x{color[0]:02x}{color[1]:02x}{color[2]:02x}"
 
 
-def convert_player(player: types._PlayerStatus, all_seekers: dict[str, seekers.Seeker]) -> seekers.Player:
+def convert_player(player: types._PlayerStatus) -> seekers.Player:
     out = seekers.Player(
-        player.id,
-        f"<{player.id}>",
-        player.score,
-        [all_seekers[seeker_id] for seeker_id in player.seeker_ids],
+        id=player.id,
+        name=f"<{player.id}>",
+        color=convert_color(player.color),
+        score=player.score,
+        seekers={}
     )
-
-    out._color = convert_color(player.color)
 
     return out
 
@@ -121,13 +130,23 @@ def convert_player_back(player: seekers.Player) -> PlayerStatus:
     )
 
 
-def convert_camp(camp: types._CampStatus, all_players: dict[str, seekers.Player]) -> seekers.Camp:
+def convert_camp(camp: types._CampStatus, owner: seekers.Player) -> seekers.Camp:
     out = seekers.Camp(
-        camp.id,
-        all_players[camp.player_id],
-        convert_vector(camp.position),
-        camp.width,
-        camp.height
+        id=camp.id,
+        owner=owner,
+        position=convert_vector(camp.position),
+        width=camp.width,
+        height=camp.height
     )
 
     return out
+
+
+def convert_camp_back(camp: seekers.Camp) -> CampStatus:
+    return CampStatus(
+        id=camp.id,
+        player_id=camp.owner.id,
+        position=convert_vector_back(camp.position),
+        width=camp.width,
+        height=camp.height
+    )

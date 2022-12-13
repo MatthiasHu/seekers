@@ -107,6 +107,24 @@ class Config:
 
         return {convert_specifier(k): str(v) for k, v in self_dict.items()}
 
+    @classmethod
+    def from_properties(cls, properties: dict[str, str]) -> "Config":
+        all_kwargs = {field.name: field.type for field in dataclasses.fields(Config) if field.init}
+
+        all_fields_as_none = {k: None for k in all_kwargs}
+
+        kwargs = {}
+        for key, value in properties.items():
+            field_name = key.replace(".", "_").replace("-", "_")
+            # convert the value to the correct type
+            value = all_kwargs[field_name](value)
+
+            kwargs[field_name] = value
+
+        kwargs = all_fields_as_none | kwargs
+
+        return cls(**kwargs)
+
 
 class Vector:
     def __init__(self, x: float = 0, y: float = 0):
@@ -311,6 +329,9 @@ class Seeker(Physical):
     @property
     def is_disabled(self):
         return self.disabled_counter > 0
+
+    def disabled(self):
+        return self.is_disabled
 
     def magnetic_force(self, world, pos: Vector) -> Vector:
         def bump(r) -> float:
@@ -535,12 +556,12 @@ class GRPCClientPlayer(InternalPlayer):
         self.was_updated = threading.Event()
 
     def wait_for_update(self):
-        timeout = 5
+        timeout = 5  # seconds
 
         was_updated = self.was_updated.wait(timeout)
 
         if not was_updated:
-            raise TimeoutError(f"GRPCClientPlayer did not update in time. (Timeout is {timeout} seconds)")
+            raise TimeoutError(f"GRPCClientPlayer {self.name!r} did not update in time. (Timeout is {timeout} seconds)")
 
         self.was_updated.clear()
 

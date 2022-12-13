@@ -1,6 +1,7 @@
 from .seekers_types import *
 from . import game_logic, draw
 
+import time
 import collections
 import typing
 import os
@@ -15,9 +16,15 @@ class GameFullError(Exception): ...
 
 
 class SeekersGame:
-    def __init__(self, local_ai_locations: typing.Iterable[str], config: Config, fps=120):
+    def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
+                 grpc_address: typing.Literal[False] | str = "localhost:7777", fps=60):
         self.config = config
         self.fps = fps
+        if grpc_address:
+            from .grpc import GrpcSeekersServer
+            self.grpc = GrpcSeekersServer(self, grpc_address)
+        else:
+            self.grpc = None
 
         self.players = self.load_local_players(local_ai_locations)
         self.world = World(*self.config.map_dimensions)
@@ -48,6 +55,9 @@ class SeekersGame:
 
         # prepare graphics
         draw.init(self.players.values())
+
+        if self.grpc:
+            self.grpc.start_game()
 
         self.mainloop()
 
@@ -83,11 +93,19 @@ class SeekersGame:
                 self.print_scores()
                 break
 
-    def mainloop(self):
-        # TODO: Add grpc server support
-        # TODO: Add wait for all players to join
+        if self.grpc:
+            self.grpc.stop()
 
-        with ThreadPool(len(self.players)) as thread_pool:
+    def listen(self):
+        if self.grpc:
+            self.grpc.start()
+
+            if not self.config.global_auto_play:
+                while len(self.players) < self.config.global_players:
+                    time.sleep(0.1)
+
+    def mainloop(self):
+        with ThreadPool(len(self.players) or 1) as thread_pool:
             self._mainloop(thread_pool)
 
     @staticmethod
@@ -120,5 +138,5 @@ class SeekersGame:
             print(f"{player.score} P.:\t{player.name}")
 
     @property
-    def seekers(self):
+    def seekers(self) -> collections.ChainMap[str, InternalSeeker]:
         return collections.ChainMap(*(p.seekers for p in self.players.values()))
