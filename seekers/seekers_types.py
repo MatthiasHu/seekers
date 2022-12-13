@@ -378,13 +378,16 @@ class InternalSeeker(InternalPhysical, Seeker):
         b = self.config.seeker_magnet_slowdown if self.magnet.is_on() else 1
         return InternalPhysical.thrust(self) * b
 
+    def magnet_effective(self):
+        return self.magnet.is_on() and not self.is_disabled
+
     def collision(self, other: "InternalSeeker", world):
-        if self.magnet.is_on():
+        if self.magnet_effective():
             self.disable()
-        if other.magnet.is_on():
+        if other.magnet_effective():
             other.disable()
 
-        if not (self.magnet.is_on() or other.magnet.is_on()):
+        if not (self.magnet_effective() or other.magnet_effective()):
             self.disable()
             other.disable()
 
