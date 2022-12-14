@@ -436,9 +436,6 @@ class InternalPlayer(Player):
 
         return player
 
-    def add_debug_drawing(self, debug_drawing):
-        self.debug_drawings.append(debug_drawing)
-
     @abc.abstractmethod
     def poll_ai(self, wait: typing.Literal["wait"] | ThreadPool, world: "World", goals: list[InternalGoal],
                 players: dict[str, "InternalPlayer"], time: float, debug: bool):
@@ -521,13 +518,17 @@ class LocalPlayer(InternalPlayer):
         ai_input = self.get_ai_input(world, goals, players, time)
 
         def call_ai():
-            self.debug_drawings.clear()
+            new_debug_drawings = []
 
             if debug:
                 from .debug_drawing import add_debug_drawing_func_ctxtvar
-                add_debug_drawing_func_ctxtvar.set(self.add_debug_drawing)
+                add_debug_drawing_func_ctxtvar.set(new_debug_drawings.append)
 
-            return self.ai.decide_function(*ai_input)
+            ai_out = self.ai.decide_function(*ai_input)
+
+            self.debug_drawings = new_debug_drawings
+
+            return ai_out
 
         try:
             self.ai.update()
@@ -597,10 +598,6 @@ class GRPCClientPlayer(InternalPlayer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.was_updated = threading.Event()
-
-    def add_debug_drawing(self, debug_drawing):
-        # debug drawing is not supported for GRPC players
-        pass
 
     def wait_for_update(self):
         timeout = 5  # seconds
