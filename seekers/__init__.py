@@ -16,6 +16,7 @@ class GameFullError(Exception): ...
 
 
 class SeekersGame:
+    """A Seekers game. Manages the game logic, players, the gRPC server and graphics."""
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
                  grpc_address: typing.Literal[False] | str = "localhost:7777", fps=60):
         self.config = config
@@ -34,6 +35,7 @@ class SeekersGame:
         self.ticks = 0
 
     def start(self):
+        """Start the game."""
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
         self.clock = pygame.time.Clock()
 
@@ -82,21 +84,24 @@ class SeekersGame:
 
                 self.ticks += 1
 
+                # end game if tournament_length has been reached
+                if self.config.global_playtime and self.ticks > self.config.global_playtime:
+                    self.running = False
+                    break
+
             # draw graphics
             draw.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock, self.world,
                       self.screen)
 
             self.clock.tick(self.fps)
 
-            # end game if tournament_length has been reached
-            if self.config.global_playtime and self.ticks > self.config.global_playtime:
-                self.print_scores()
-                break
+        self.print_scores()
 
         if self.grpc:
             self.grpc.stop()
 
     def listen(self):
+        """Start the gRPC server. Block until all players have connected unless global.auto-play is set."""
         if self.grpc:
             self.grpc.start()
 
@@ -105,11 +110,13 @@ class SeekersGame:
                     time.sleep(0.1)
 
     def mainloop(self):
+        """Start the game. Block until the game is over."""
         with ThreadPool(len(self.players) or 1) as thread_pool:
             self._mainloop(thread_pool)
 
     @staticmethod
     def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, InternalPlayer]:
+        """Return the players found in the given directories or files."""
         out: dict[str, InternalPlayer] = {}
 
         for location in ai_locations:
@@ -126,6 +133,7 @@ class SeekersGame:
         return out
 
     def add_player(self, player: InternalPlayer):
+        """Add a player to the game and raise a GameFullError if the game is full."""
         if len(self.players) >= self.config.global_players:
             raise GameFullError(
                 f"Game full. Cannot add more players. Max player count is {self.config.global_players}."

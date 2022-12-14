@@ -1,3 +1,5 @@
+"""This file contains scaffolding classes that represent the gRPC types. This is useful for type hinting."""
+
 import dataclasses
 
 
