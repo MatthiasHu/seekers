@@ -443,8 +443,8 @@ class LocalPlayerAI:
     timestamp: float
     decide_function: DecideCallable
 
-    @classmethod
-    def from_file(cls, filepath: str) -> "LocalPlayerAI":
+    @staticmethod
+    def get_decide_function(filepath: str):
         try:
             with open(filepath) as f:
                 code = f.read()
@@ -458,13 +458,27 @@ class LocalPlayerAI:
             except Exception as e:
                 raise Exception(f"AI {filepath!r} does not have a 'decide' function") from e
 
-            return cls(filepath, os.path.getctime(filepath), ai)
+            return ai
         except Exception as e:
             # print(f"Error while loading AI {filepath!r}", file=sys.stderr)
             # traceback.print_exc(file=sys.stderr)
             # print(file=sys.stderr)
 
             raise NotImplementedError(f"Error while loading AI {filepath!r}. Dummy AIs are not allowed.") from e
+
+    @classmethod
+    def from_file(cls, filepath: str) -> "LocalPlayerAI":
+        decide_func = cls.get_decide_function(filepath)
+
+        return cls(filepath, os.path.getctime(filepath), decide_func)
+
+    def update(self):
+        new_timestamp = os.path.getctime(self.filepath)
+        if new_timestamp > self.timestamp:
+            print(f"Reloading AI {self.filepath!r}")
+
+            self.decide_function = self.get_decide_function(self.filepath)
+            self.timestamp = new_timestamp
 
 
 @dataclasses.dataclass
@@ -494,6 +508,7 @@ class LocalPlayer(InternalPlayer):
         ai_input = self.get_ai_input(world, goals, players, time)
 
         try:
+            self.ai.update()
             ai_output = self.ai.decide_function(*ai_input)
         except Exception as e:
             raise InvalidAiOutputError(f"AI {self.ai.filepath!r} raised an exception") from e
