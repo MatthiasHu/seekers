@@ -18,9 +18,8 @@ class GameFullError(Exception): ...
 class SeekersGame:
     """A Seekers game. Manages the game logic, players, the gRPC server and graphics."""
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
-                 grpc_address: typing.Literal[False] | str = "localhost:7777", fps=60):
+                 grpc_address: typing.Literal[False] | str = "localhost:7777"):
         self.config = config
-        self.fps = fps
         if grpc_address:
             from .grpc import GrpcSeekersServer
             self.grpc = GrpcSeekersServer(self, grpc_address)
@@ -93,7 +92,7 @@ class SeekersGame:
             draw.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock, self.world,
                       self.screen)
 
-            self.clock.tick(self.fps)
+            self.clock.tick(self.config.global_fps)
 
         self.print_scores()
 

@@ -29,6 +29,7 @@ class Config:
     global_auto_play: bool
     global_wait_for_players: bool
     global_playtime: int
+    global_fps: int
     global_speed: int
     global_players: int
     global_seekers: int
@@ -69,6 +70,7 @@ class Config:
             global_auto_play=cp.getboolean("global", "auto-play"),
             global_wait_for_players=cp.getboolean("global", "wait-for-players"),
             global_playtime=cp.getint("global", "playtime"),
+            global_fps=cp.getint("global", "fps"),
             global_speed=cp.getint("global", "speed"),
             global_players=cp.getint("global", "players"),
             global_seekers=cp.getint("global", "seekers"),
