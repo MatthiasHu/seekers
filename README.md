@@ -14,6 +14,7 @@
   1. <a name="join-method-new"></a>as gRPC clients (new and safe way)
   2. <a name="join-method-old"></a>as a local file whose `decide`-function is called directly from within the game (old and unsafe way)
      * This is discouraged as it allows players to access the game's internals and cheat. See [this issue](https://github.com/seekers-dev/seekers/issues/1).
+     * useful for debugging/AI-developement
 
 ## How to run
 Install python3 and the packages in [`requirements.txt`](requirements.txt).
