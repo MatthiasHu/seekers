@@ -23,6 +23,9 @@ class ServerUnavailableError(GrpcSeekersClientError): ...
 
 
 class GrpcSeekersRawClient:
+    """A client for a Seekers gRPC game.
+    It is called "raw" because it is nothing but a wrapper for the gRPC services."""
+
     def __init__(self, token: str, address: str = "localhost:7777"):
         self.token = token
 
@@ -81,6 +84,9 @@ class GrpcSeekersRawClient:
 
 
 class GrpcSeekersClient:
+    """A client for a Seekers gRPC game. It contains a ``GrpcSeekersRawClient`` and implements a mainloop.
+    The ``decide_function`` is called in a loop and the output of that function is sent to the server."""
+
     def __init__(self, token: str, decide_function: seekers.DecideCallable, address: str = "localhost:7777"):
         self._logger = logging.getLogger(self.__class__.__name__)
 
@@ -96,16 +102,18 @@ class GrpcSeekersClient:
         self.last_gametime = -1
 
     def mainloop(self):
+        """Start the mainloop. This function blocks until the game ends."""
         while 1:
             self.tick()
 
-    def tick(self):
-        self._logger.debug(f"Tick!")
+    def get_ai_input(self) -> seekers.AIInput:
+        # wait for the next game tick
+        while 1:
+            entity_reply = self.client.entities()
+            if entity_reply.passed_playtime != self.last_gametime:
+                break
 
-        entity_reply = self.client.entities()
-        if entity_reply.passed_playtime == self.last_gametime:
-            self._logger.debug(f"Tick! Nothing to do, no time passed.")
-            return
+            time.sleep(0.01)
 
         if (entity_reply.passed_playtime - self.last_gametime) > 1:
             self._logger.info(f"Missed time: {entity_reply.passed_playtime - self.last_gametime}")
@@ -113,7 +121,6 @@ class GrpcSeekersClient:
         self.last_gametime = entity_reply.passed_playtime
 
         props = self.client.server_properties()
-        self._logger.debug(f"Tick2!")
         config = seekers.Config.from_properties(props)
         player_reply = self.client.players_info()
         all_seekers, goals = entity_reply.seekers, entity_reply.goals
@@ -175,7 +182,7 @@ class GrpcSeekersClient:
         except KeyError as e:
             raise GrpcSeekersClientError("Invalid Response: Essential properties missing.") from e
 
-        new_seekers = self.decide_function(
+        return (
             list(me.seekers.values()),
             converted_other_seekers,
             list(converted_seekers.values()),
@@ -187,21 +194,25 @@ class GrpcSeekersClient:
             entity_reply.passed_playtime,
         )
 
+    def tick(self):
+        """Call the ``decide_function`` and send the output to the server."""
+
+        ai_input = self.get_ai_input()
+
+        new_seekers = self.decide_function(*ai_input)
+
         self.send_updates(new_seekers)
 
     def send_updates(self, new_seekers: list[seekers.Seeker]):
-        cur_time = time.perf_counter()
-        # if self._last_update:
-        #     dt = cur_time - self._last_update
-        #     self._logger.debug(f"Last update took {dt:.3f}s ({1 / dt:.0f}Hz)")
-
-        self._last_update = cur_time
+        self._last_update = time.perf_counter()
 
         for seeker in new_seekers:
             self.client.send_command(seeker.id, convert_vector_back(seeker.target), seeker.magnet.strength)
 
 
 class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
+    """A Seekers game servicer. It implements all needed gRPC services and is compatible with the
+    ``GrpcSeekersRawClient``. It stores a reference to the game to have full control over it."""
     def __init__(self, seekers_game: seekers.SeekersGame, game_start_event: threading.Event):
         self.seekers_game = seekers_game
         self.game_start_event = game_start_event
@@ -284,6 +295,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
 
 
 class GrpcSeekersServer:
+    """A wrapper around the ``GrpcSeekersServicer`` that handles the gRPC server."""
     def __init__(self, seekers_game: seekers.SeekersGame, address: str = "localhost:7777"):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._logger.debug(f"Starting server on {address=}")
