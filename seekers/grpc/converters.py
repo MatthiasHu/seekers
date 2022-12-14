@@ -100,9 +100,6 @@ def convert_goal_back(goal: seekers.InternalGoal) -> GoalStatus:
 
 
 def convert_color(color: str) -> tuple[int, int, int]:
-    if len(color) != 8:
-        from seekers.grpc import GrpcSeekersClientError
-        raise GrpcSeekersClientError(f"Invalid Response: Invalid color: {color!r}")
     # noinspection PyTypeChecker
     return tuple(int(color[i:i + 2], base=16) for i in (2, 4, 6))
 
