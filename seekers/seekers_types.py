@@ -423,8 +423,11 @@ class Player:
     camp: "Camp" = dataclasses.field(init=False, default=None)
 
 
+@dataclasses.dataclass
 class InternalPlayer(Player):
     seekers: dict[str, InternalSeeker]
+
+    debug_drawings: list = dataclasses.field(init=False, default_factory=list)
 
     def to_ai_input(self) -> Player:
         player = Player(self.id, self.name, self.color, self.score, {})
@@ -433,9 +436,12 @@ class InternalPlayer(Player):
 
         return player
 
+    def add_debug_drawing(self, debug_drawing):
+        self.debug_drawings.append(debug_drawing)
+
     @abc.abstractmethod
     def poll_ai(self, wait: typing.Literal["wait"] | ThreadPool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time: float):
+                players: dict[str, "InternalPlayer"], time: float, debug: bool):
         ...
 
 
@@ -511,12 +517,21 @@ class LocalPlayer(InternalPlayer):
         return my_seekers, other_seekers, all_seekers, goals, list(players.values()), my_camp, camps, world, time
 
     def _update_ai_action(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"],
-                          time: float):
+                          time: float, debug: bool):
         ai_input = self.get_ai_input(world, goals, players, time)
+
+        def call_ai():
+            self.debug_drawings.clear()
+
+            if debug:
+                from .debug_drawing import add_debug_drawing_func_ctxtvar
+                add_debug_drawing_func_ctxtvar.set(self.add_debug_drawing)
+
+            return self.ai.decide_function(*ai_input)
 
         try:
             self.ai.update()
-            ai_output = self.ai.decide_function(*ai_input)
+            ai_output = call_ai()
         except Exception as e:
             raise InvalidAiOutputError(f"AI {self.ai.filepath!r} raised an exception") from e
 
@@ -549,9 +564,9 @@ class LocalPlayer(InternalPlayer):
             own_seeker.magnet = Magnet(ai_seeker.magnet.strength)
 
     def poll_ai(self, wait: typing.Literal["wait"] | ThreadPool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time: float):
+                players: dict[str, "InternalPlayer"], time: float, debug: bool):
         if wait == "wait":
-            self._update_ai_action(world, goals, players, time)
+            self._update_ai_action(world, goals, players, time, debug)
 
         else:
             wait: ThreadPool
@@ -559,7 +574,8 @@ class LocalPlayer(InternalPlayer):
             def error_callback(e):
                 raise e
 
-            wait.apply_async(self._update_ai_action, (world, goals, players, time), error_callback=error_callback)
+            wait.apply_async(self._update_ai_action, (world, goals, players, time, debug),
+                             error_callback=error_callback)
 
     @classmethod
     def from_file(cls, filepath: str) -> "LocalPlayer":
@@ -577,9 +593,14 @@ class LocalPlayer(InternalPlayer):
 
 class GRPCClientPlayer(InternalPlayer):
     """A player whose decide function is called via a gRPC server and client. See README.md new method."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.was_updated = threading.Event()
+
+    def add_debug_drawing(self, debug_drawing):
+        # debug drawing is not supported for GRPC players
+        pass
 
     def wait_for_update(self):
         timeout = 5  # seconds
@@ -592,13 +613,14 @@ class GRPCClientPlayer(InternalPlayer):
         self.was_updated.clear()
 
     def poll_ai(self, wait: typing.Literal["wait"] | ThreadPool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time: float):
+                players: dict[str, "InternalPlayer"], time: float, debug: bool):
         if wait == "wait":
             self.wait_for_update()
 
 
 class World:
     """The world in which the game takes place. This class mainly handles the torus geometry."""
+
     def __init__(self, width, height, debug_mode=True):
         self.width = width
         self.height = height

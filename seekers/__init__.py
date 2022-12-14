@@ -20,10 +20,12 @@ class GameFullError(Exception): ...
 class SeekersGame:
     """A Seekers game. Manages the game logic, players, the gRPC server and graphics."""
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
-                 grpc_address: typing.Literal[False] | str = "localhost:7777"):
+                 grpc_address: typing.Literal[False] | str = "localhost:7777", debug: bool = True):
         self._logger = logging.getLogger("SeekersGame")
 
         self.config = config
+        self.debug = debug
+
         if grpc_address:
             from .grpc import GrpcSeekersServer
             self.grpc = GrpcSeekersServer(self, grpc_address)
@@ -80,10 +82,8 @@ class SeekersGame:
             # perform game logic
             for _ in range(self.config.updates_per_frame):
                 for player in self.players.values():
-                    player.poll_ai(
-                        "wait" if self.config.global_wait_for_players else thread_pool, self.world, self.goals,
-                        self.players, self.ticks
-                    )
+                    player.poll_ai("wait" if self.config.global_wait_for_players else thread_pool, self.world,
+                                   self.goals, self.players, self.ticks, self.debug)
 
                 game_logic.tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
 
@@ -113,7 +113,7 @@ class SeekersGame:
             self.grpc.start()
 
             if not self.config.global_auto_play:
-                self._logger.info("Waiting for players to connect...")
+                self._logger.info(f"Waiting for players to connect: {self.config.global_players - len(self.players)}")
 
                 while len(self.players) < self.config.global_players:
                     time.sleep(0.1)

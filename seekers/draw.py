@@ -74,6 +74,9 @@ def draw(players: Iterable[InternalPlayer], camps: Iterable[Camp], goals: Iterab
         for s in p.seekers.values():
             draw_seeker(s, p, world, screen)
 
+        for debug_drawing in p.debug_drawings:
+            debug_drawing.draw(screen)
+
     # draw animations
     for animation in animations:
         animation.draw(world, screen)
