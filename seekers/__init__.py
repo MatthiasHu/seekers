@@ -1,3 +1,5 @@
+import logging
+
 from .seekers_types import *
 from . import game_logic, draw
 
@@ -19,6 +21,8 @@ class SeekersGame:
     """A Seekers game. Manages the game logic, players, the gRPC server and graphics."""
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
                  grpc_address: typing.Literal[False] | str = "localhost:7777"):
+        self._logger = logging.getLogger("SeekersGame")
+
         self.config = config
         if grpc_address:
             from .grpc import GrpcSeekersServer
@@ -35,6 +39,8 @@ class SeekersGame:
 
     def start(self):
         """Start the game."""
+        self._logger.info("Starting game.")
+
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
         self.clock = pygame.time.Clock()
 
@@ -94,6 +100,8 @@ class SeekersGame:
 
             self.clock.tick(self.config.global_fps)
 
+        self._logger.info(f"Game over. (Ticks: {self.ticks})")
+
         self.print_scores()
 
         if self.grpc:
@@ -105,6 +113,8 @@ class SeekersGame:
             self.grpc.start()
 
             if not self.config.global_auto_play:
+                self._logger.info("Waiting for players to connect...")
+
                 while len(self.players) < self.config.global_players:
                     time.sleep(0.1)
 

@@ -214,6 +214,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
     """A Seekers game servicer. It implements all needed gRPC services and is compatible with the
     ``GrpcSeekersRawClient``. It stores a reference to the game to have full control over it."""
     def __init__(self, seekers_game: seekers.SeekersGame, game_start_event: threading.Event):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self.seekers_game = seekers_game
         self.game_start_event = game_start_event
 
@@ -242,6 +243,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
             context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Game is full.")
             return
 
+        self._logger.info(f"Player {player.name!r} joined the game. ({player.id})")
         # return player id
         return SessionReply(id=player.id)
 

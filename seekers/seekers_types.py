@@ -1,3 +1,4 @@
+import logging
 import os
 import threading
 import configparser
@@ -479,7 +480,8 @@ class LocalPlayerAI:
     def update(self):
         new_timestamp = os.path.getctime(self.filepath)
         if new_timestamp > self.timestamp:
-            print(f"Reloading AI {self.filepath!r}")
+            logger = logging.getLogger("AIReloader")
+            logger.debug(f"Reloading AI {self.filepath!r}.")
 
             self.decide_function = self.get_decide_function(self.filepath)
             self.timestamp = new_timestamp
