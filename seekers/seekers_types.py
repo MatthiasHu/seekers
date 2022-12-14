@@ -25,6 +25,7 @@ def get_id(obj: str):
 
 @dataclasses.dataclass(frozen=True)
 class Config:
+    """Configuration for the Seekers game."""
     global_auto_play: bool
     global_wait_for_players: bool
     global_playtime: int
@@ -109,6 +110,7 @@ class Config:
 
     @classmethod
     def from_properties(cls, properties: dict[str, str]) -> "Config":
+        """Converts a dictionary of properties, as received by a gRPC client, to a Config object."""
         all_kwargs = {field.name: field.type for field in dataclasses.fields(Config) if field.init}
 
         all_fields_as_none = {k: None for k in all_kwargs}
@@ -483,6 +485,7 @@ class LocalPlayerAI:
 
 @dataclasses.dataclass
 class LocalPlayer(InternalPlayer):
+    """A player whose decide function is called directly. See README.md old method."""
     ai: LocalPlayerAI
 
     def get_ai_input(self,
@@ -569,6 +572,7 @@ class LocalPlayer(InternalPlayer):
 
 
 class GRPCClientPlayer(InternalPlayer):
+    """A player whose decide function is called via a gRPC server and client. See README.md new method."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.was_updated = threading.Event()
@@ -590,6 +594,7 @@ class GRPCClientPlayer(InternalPlayer):
 
 
 class World:
+    """The world in which the game takes place. This class mainly handles the torus geometry."""
     def __init__(self, width, height, debug_mode=True):
         self.width = width
         self.height = height
