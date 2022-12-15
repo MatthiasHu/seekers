@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 import threading
 import configparser
@@ -6,6 +7,7 @@ import math
 import dataclasses
 import abc
 import random
+import traceback
 import typing
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
@@ -437,7 +439,7 @@ class InternalPlayer(Player):
         return player
 
     @abc.abstractmethod
-    def poll_ai(self, wait: typing.Literal["wait"] | ThreadPool, world: "World", goals: list[InternalGoal],
+    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal],
                 players: dict[str, "InternalPlayer"], time: float, debug: bool):
         ...
 
@@ -495,6 +497,9 @@ class LocalPlayer(InternalPlayer):
     """A player whose decide function is called directly. See README.md old method."""
     ai: LocalPlayerAI
 
+    _thread_pool: ThreadPool = dataclasses.field(init=False, default_factory=lambda: ThreadPool(1))
+    _waiting: int = dataclasses.field(init=False, default=0)
+
     def get_ai_input(self,
                      world: "World",
                      _goals: list[InternalGoal],
@@ -513,11 +518,8 @@ class LocalPlayer(InternalPlayer):
 
         return my_seekers, other_seekers, all_seekers, goals, list(players.values()), my_camp, camps, world, time
 
-    def _update_ai_action(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"],
-                          time: float, debug: bool):
-        ai_input = self.get_ai_input(world, goals, players, time)
-
-        def call_ai():
+    def _call_ai(self, ai_input: AIInput, debug: bool) -> typing.Any:
+        def call():
             new_debug_drawings = []
 
             if debug:
@@ -532,10 +534,11 @@ class LocalPlayer(InternalPlayer):
 
         try:
             self.ai.update()
-            ai_output = call_ai()
+            return call()
         except Exception as e:
             raise InvalidAiOutputError(f"AI {self.ai.filepath!r} raised an exception") from e
 
+    def _process_ai_output(self, ai_output: typing.Any):
         if not isinstance(ai_output, list):
             raise InvalidAiOutputError(f"AI output must be a list, not {type(ai_output)!r}.")
 
@@ -564,19 +567,38 @@ class LocalPlayer(InternalPlayer):
             own_seeker.target = Vector(ai_seeker.target.x, ai_seeker.target.y)
             own_seeker.magnet = Magnet(ai_seeker.magnet.strength)
 
-    def poll_ai(self, wait: typing.Literal["wait"] | ThreadPool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time: float, debug: bool):
-        if wait == "wait":
-            self._update_ai_action(world, goals, players, time, debug)
+    def _update_ai_action(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"],
+                          time: float, debug: bool):
+        ai_input = self.get_ai_input(world, goals, players, time)
+
+        ai_output = self._call_ai(ai_input, debug)
+
+        self._process_ai_output(ai_output)
+
+    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal],
+                players: dict[str, "InternalPlayer"], time_: float, debug: bool):
+        if wait:
+            self._update_ai_action(world, goals, players, time_, debug)
 
         else:
-            wait: ThreadPool
+            if self._waiting > 2:
+                # no more than two items in the queue
+                return
 
             def error_callback(e):
-                raise e
+                p = traceback.format_exception(e)
+                logging.getLogger(self.name).error("".join(p))
 
-            wait.apply_async(self._update_ai_action, (world, goals, players, time, debug),
-                             error_callback=error_callback)
+            def run(*args, **kwargs):
+                self._waiting -= 1
+                self._update_ai_action(*args, **kwargs)
+
+            self._waiting += 1
+            self._thread_pool.apply_async(
+                run,
+                args=(world, goals, players, time_, debug),
+                error_callback=error_callback
+            )
 
     @classmethod
     def from_file(cls, filepath: str) -> "LocalPlayer":
@@ -609,9 +631,9 @@ class GRPCClientPlayer(InternalPlayer):
 
         self.was_updated.clear()
 
-    def poll_ai(self, wait: typing.Literal["wait"] | ThreadPool, world: "World", goals: list[InternalGoal],
+    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal],
                 players: dict[str, "InternalPlayer"], time: float, debug: bool):
-        if wait == "wait":
+        if wait:
             self.wait_for_update()
 
 
