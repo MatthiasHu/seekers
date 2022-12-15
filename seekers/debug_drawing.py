@@ -19,10 +19,11 @@ from seekers import Vector
 class TextDebugDrawing(DebugDrawing):
     text: str
     position: Vector
+    color: tuple[int, int, int] = (255, 255, 255)
 
     def draw(self, surface: pygame.Surface):
         font = pygame.font.SysFont("monospace", 15)
-        label = font.render(self.text, True, (255, 255, 255))
+        label = font.render(self.text, True, self.color)
         surface.blit(label, tuple(self.position))
 
 
@@ -30,30 +31,34 @@ class TextDebugDrawing(DebugDrawing):
 class LineDebugDrawing(DebugDrawing):
     start: Vector
     end: Vector
+    color: tuple[int, int, int] = (255, 255, 255)
+    width: int = 2
 
     def draw(self, surface: pygame.Surface):
-        pygame.draw.line(surface, (255, 255, 255), tuple(self.start), tuple(self.end), 2)
+        pygame.draw.line(surface, self.color, tuple(self.start), tuple(self.end), self.width)
 
 
 @dataclasses.dataclass
 class CircleDebugDrawing(DebugDrawing):
     position: Vector
     radius: float
+    color: tuple[int, int, int] = (255, 255, 255)
+    width: int = 2
 
     def draw(self, surface: pygame.Surface):
-        pygame.draw.circle(surface, (255, 255, 255), tuple(self.position), self.radius, width=2)
+        pygame.draw.circle(surface, self.color, tuple(self.position), self.radius, self.width)
 
 
-def draw_text(text: str, position: Vector):
-    add_debug_drawing_func_ctxtvar.get()(TextDebugDrawing(text, position))
+def draw_text(text: str, position: Vector, color: tuple[int, int, int] = (255, 255, 255)):
+    add_debug_drawing_func_ctxtvar.get()(TextDebugDrawing(text, position, color))
 
 
-def draw_line(start: Vector, end: Vector):
-    add_debug_drawing_func_ctxtvar.get()(LineDebugDrawing(start, end))
+def draw_line(start: Vector, end: Vector, color: tuple[int, int, int] = (255, 255, 255), width: int = 2):
+    add_debug_drawing_func_ctxtvar.get()(LineDebugDrawing(start, end, color, width))
 
 
-def draw_circle(position: Vector, radius: float):
-    add_debug_drawing_func_ctxtvar.get()(CircleDebugDrawing(position, radius))
+def draw_circle(position: Vector, radius: float, color: tuple[int, int, int] = (255, 255, 255), width: int = 2):
+    add_debug_drawing_func_ctxtvar.get()(CircleDebugDrawing(position, radius, color, width))
 
 
 add_debug_drawing_func_ctxtvar: \
