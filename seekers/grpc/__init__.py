@@ -116,7 +116,7 @@ class GrpcSeekersClient:
             time.sleep(0.01)
 
         if (entity_reply.passed_playtime - self.last_gametime) > 1:
-            self._logger.info(f"Missed time: {entity_reply.passed_playtime - self.last_gametime}")
+            self._logger.debug(f"Missed time: {entity_reply.passed_playtime - self.last_gametime}")
 
         self.last_gametime = entity_reply.passed_playtime
 

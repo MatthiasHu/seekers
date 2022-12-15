@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import os
 import threading
 import configparser
@@ -594,8 +593,11 @@ class LocalPlayer(InternalPlayer):
 
             def run(*args, **kwargs):
                 self._waiting -= 1
-                # we have time as a function because in the time
-                # leading up to this being called, game time may have passed
+                # We have time as a function because in the time
+                # leading up to this being called, game time may
+                # have passed.
+                # The seekers, goals and players objects stay the
+                # same (no copies), so we do not need a function.
                 self._update_ai_action(*args, **kwargs)
 
             self._waiting += 1
@@ -617,6 +619,10 @@ class LocalPlayer(InternalPlayer):
             seekers={},
             ai=LocalPlayerAI.from_file(filepath)
         )
+
+    def __del__(self):
+        # to prevent exception, when the program closes
+        self._thread_pool.terminate()
 
 
 class GRPCClientPlayer(InternalPlayer):
