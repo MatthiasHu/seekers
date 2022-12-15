@@ -401,7 +401,10 @@ class InternalSeeker(InternalPhysical, Seeker):
         InternalPhysical.collision(self, other, world)
 
     def to_ai_input(self, owner: "Player") -> Seeker:
-        return Seeker(self.id, self.position, self.velocity, self.mass, self.radius, owner, self.config)
+        s = Seeker(self.id, self.position, self.velocity, self.mass, self.radius, owner, self.config)
+        s.disabled_counter = self.disabled_counter
+
+        return s
 
 
 AIInput = tuple[
