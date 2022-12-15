@@ -1,10 +1,11 @@
-import typing
-
 from .draw import ScoreAnimation, Animation
 from .seekers_types import *
 
+import typing
 
-def tick(players: typing.Iterable[InternalPlayer], camps: list[Camp], goals: list[InternalGoal], animations: list[Animation], world: World):
+
+def tick(players: typing.Iterable[InternalPlayer], camps: list[Camp], goals: list[InternalGoal],
+         animations: list[Animation], world: World):
     seekers = [s for p in players for s in p.seekers.values()]
     # move and recover seekers
     for s in seekers:

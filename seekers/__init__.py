@@ -1,8 +1,7 @@
-import logging
-
 from .seekers_types import *
 from . import game_logic, draw
 
+import logging
 import time
 import collections
 import typing
@@ -105,7 +104,7 @@ class SeekersGame:
 
             self.clock.tick(self.config.global_fps)
 
-        self._logger.info(f"Game over. (Ticks: {self.ticks})")
+        self._logger.info(f"Game over. (Ticks: {self.ticks - 1})")
 
         self.print_scores()
 
