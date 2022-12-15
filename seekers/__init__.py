@@ -40,7 +40,7 @@ class SeekersGame:
         self.ticks = 0
 
     def start(self):
-        """Start the game."""
+        """Start the game. Run the mainloop and block until the game is over."""
         self._logger.info("Starting game.")
 
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
@@ -70,7 +70,11 @@ class SeekersGame:
 
         self.mainloop()
 
-    def _mainloop(self, thread_pool: ThreadPool):
+    def get_time(self):
+        return self.ticks
+
+    def mainloop(self):
+        """Start the game. Block until the game is over."""
         running = True
 
         while running:
@@ -82,8 +86,8 @@ class SeekersGame:
             # perform game logic
             for _ in range(self.config.updates_per_frame):
                 for player in self.players.values():
-                    player.poll_ai("wait" if self.config.global_wait_for_players else thread_pool, self.world,
-                                   self.goals, self.players, self.ticks, self.debug)
+                    player.poll_ai(self.config.global_wait_for_players, self.world,
+                                   self.goals, self.players, self.get_time, self.debug)
 
                 game_logic.tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
 
@@ -117,12 +121,6 @@ class SeekersGame:
 
                 while len(self.players) < self.config.global_players:
                     time.sleep(0.1)
-
-    def mainloop(self):
-        """Start the game. Block until the game is over."""
-        with ThreadPool(len(self.players) or 1) as thread_pool:
-            self._mainloop(thread_pool)
-
     @staticmethod
     def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, InternalPlayer]:
         """Return the players found in the given directories or files."""
