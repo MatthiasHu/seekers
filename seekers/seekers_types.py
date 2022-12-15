@@ -121,6 +121,7 @@ class Config:
 
         kwargs = {}
         for key, value in properties.items():
+            # field.name-example -> field_name_example
             field_name = key.replace(".", "_").replace("-", "_")
             # convert the value to the correct type
             value = all_kwargs[field_name](value)
@@ -155,8 +156,8 @@ class Vector:
             return self.x
         elif i == 1:
             return self.y
-        else:
-            raise IndexError
+
+        raise IndexError
 
     def __add__(self, other: "Vector"):
         return Vector(self.x + other.x, self.y + other.y)
@@ -306,12 +307,13 @@ class Magnet:
 
     @strength.setter
     def strength(self, value):
-        assert 1 >= value >= -8
-
-        self._strength = value
+        if 1 >= value >= -8:
+            self._strength = value
+        else:
+            raise ValueError("Magnet strength must be between -8 and 1.")
 
     def is_on(self):
-        return not self.strength == 0
+        return self.strength != 0
 
     def set_repulsive(self):
         self.strength = -8
@@ -535,7 +537,11 @@ class LocalPlayer(InternalPlayer):
             return ai_out
 
         try:
-            self.ai.update()
+            # only check for an updated file every 10 game ticks
+            *_, passed_playtime = ai_input
+            if int(passed_playtime) % 10 == 0:
+                self.ai.update()
+
             return call()
         except Exception as e:
             raise InvalidAiOutputError(f"AI {self.ai.filepath!r} raised an exception") from e
@@ -566,8 +572,10 @@ class LocalPlayer(InternalPlayer):
                 raise InvalidAiOutputError(
                     f"AI output Seeker magnet must be a Magnet, not {type(ai_seeker.magnet)!r}.")
 
-            own_seeker.target = Vector(ai_seeker.target.x, ai_seeker.target.y)
-            own_seeker.magnet = Magnet(ai_seeker.magnet.strength)
+            own_seeker.target.x = float(ai_seeker.target.x)
+            own_seeker.target.y = float(ai_seeker.target.y)
+
+            own_seeker.magnet.strength = int(ai_seeker.magnet.strength)
 
     def _update_ai_action(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"],
                           time: typing.Callable[[], float], debug: bool):
