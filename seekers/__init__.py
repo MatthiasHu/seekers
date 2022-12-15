@@ -19,6 +19,7 @@ class GameFullError(Exception): ...
 
 class SeekersGame:
     """A Seekers game. Manages the game logic, players, the gRPC server and graphics."""
+
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
                  grpc_address: typing.Literal[False] | str = "localhost:7777", debug: bool = True):
         self._logger = logging.getLogger("SeekersGame")
@@ -95,7 +96,7 @@ class SeekersGame:
 
                 # end game if tournament_length has been reached
                 if self.config.global_playtime and self.ticks > self.config.global_playtime:
-                    self.running = False
+                    running = False
                     break
 
             # draw graphics
@@ -121,6 +122,7 @@ class SeekersGame:
 
                 while len(self.players) < self.config.global_players:
                     time.sleep(0.1)
+
     @staticmethod
     def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, InternalPlayer]:
         """Return the players found in the given directories or files."""
