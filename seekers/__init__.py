@@ -94,7 +94,7 @@ class SeekersGame:
                 self.ticks += 1
 
                 # end game if tournament_length has been reached
-                if self.config.global_playtime and self.ticks > self.config.global_playtime:
+                if self.config.global_playtime and self.ticks >= self.config.global_playtime:
                     running = False
                     break
 
@@ -104,7 +104,7 @@ class SeekersGame:
 
             self.clock.tick(self.config.global_fps)
 
-        self._logger.info(f"Game over. (Ticks: {self.ticks - 1})")
+        self._logger.info(f"Game over. (Ticks: {self.ticks})")
 
         self.print_scores()
 
