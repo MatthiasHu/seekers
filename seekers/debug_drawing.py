@@ -20,11 +20,17 @@ class TextDebugDrawing(DebugDrawing):
     text: str
     position: Vector
     color: tuple[int, int, int] = (255, 255, 255)
+    size: int = 20
+
+    def __post_init__(self):
+        self.font = pygame.font.SysFont("monospace", self.size, bold=True)
 
     def draw(self, surface: pygame.Surface):
-        font = pygame.font.SysFont("monospace", 15)
-        label = font.render(self.text, True, self.color)
-        surface.blit(label, tuple(self.position))
+        # draw the text centered at the position
+        text_surface = self.font.render(self.text, True, self.color)
+        text_rect = text_surface.get_rect(center=tuple(self.position))
+        surface.blit(text_surface, text_rect)
+
 
 
 @dataclasses.dataclass
@@ -49,8 +55,8 @@ class CircleDebugDrawing(DebugDrawing):
         pygame.draw.circle(surface, self.color, tuple(self.position), self.radius, self.width)
 
 
-def draw_text(text: str, position: Vector, color: tuple[int, int, int] = (255, 255, 255)):
-    add_debug_drawing_func_ctxtvar.get()(TextDebugDrawing(text, position, color))
+def draw_text(text: str, position: Vector, color: tuple[int, int, int] = (255, 255, 255), size: int = 20):
+    add_debug_drawing_func_ctxtvar.get()(TextDebugDrawing(text, position, color, size))
 
 
 def draw_line(start: Vector, end: Vector, color: tuple[int, int, int] = (255, 255, 255), width: int = 2):
