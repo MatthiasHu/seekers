@@ -1,6 +1,6 @@
 from multiprocessing import Process
 import argparse
-import os.path
+import os
 import sys
 import logging
 from collections import defaultdict
@@ -8,12 +8,11 @@ from collections import defaultdict
 import seekers.grpc
 
 
-
 def main():
     parser = argparse.ArgumentParser(description='Run python seekers AIs as gRPC clients.')
     parser.add_argument("-address", "-a", type=str, default="localhost:7777",
                         help="Address of the server. (default: localhost:7777)")
-    parser.add_argument("-loglevel", "-log", "-l", type=str, default="ERROR",
+    parser.add_argument("-loglevel", "-log", "-l", type=str, default="INFO",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
     parser.add_argument("ai_files", type=str, nargs="+", help="Paths to the AIs.")
 
@@ -37,16 +36,19 @@ def main():
         name = ai_name(arg)
 
         def run_ai(filepath: str, name: str):
-            with open(filepath) as f:
-                mod = compile(f.read(), os.path.abspath(arg), "exec")
+            decide_func = seekers.LocalPlayerAI.get_decide_function(filepath)
 
-            mod_dict = {}
-            exec(mod, mod_dict)
-            decide = mod_dict["decide"]
+            logging.basicConfig(
+                level=args.loglevel, style="{", format=f"[{name.ljust(18)}] {{levelname}}: {{message}}",
+                stream=sys.stdout, force=True
+            )
 
-            logging.basicConfig(level=args.loglevel, style="{", format=f"[{name.ljust(18)}] {{levelname}}: {{message}}", stream=sys.stdout)
-
-            seekers.grpc.GrpcSeekersClient(name, decide, args.address).mainloop()
+            try:
+                seekers.grpc.GrpcSeekersClient(name, decide_func, args.address).run()
+            except seekers.grpc.ServerUnavailableError:
+                logging.error("Server unavailable. Check that it's running and that the address is correct.")
+            except seekers.grpc.GameFullError:
+                logging.error("Game already full.")
 
         processes.append(
             Process(

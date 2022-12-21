@@ -112,7 +112,8 @@ class SeekersGame:
             self.grpc.stop()
 
     def listen(self):
-        """Start the gRPC server. Block until all players have connected unless global.auto-play is set."""
+        """Start the gRPC server. Block until all players have connected
+        unless global.auto-play is set and unless grpc is disabled."""
         if self.grpc:
             self.grpc.start()
 

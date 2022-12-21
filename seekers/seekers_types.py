@@ -461,24 +461,37 @@ class LocalPlayerAI:
     def get_decide_function(filepath: str):
         try:
             with open(filepath) as f:
-                code = f.read()
-            mod = compile(code, filepath, "exec")
+                code = f.readlines()
+
+            if code[0].strip() == "#bot":
+                logging.info(f"AI {filepath!r} was loaded in compatibility mode. (#bot)")
+                # Wrap code inside a decide function (compatibility).
+                # The old function that did this was called 'mogrify'.
+
+                func_header = (
+                    "def decide(seekers, other_seekers, all_seekers, goals, otherPlayers, own_camp, camps, world, "
+                    "passed_time):"
+                )
+
+                code.append("return seekers")
+
+                code = [func_header] + list(map(lambda line: "    " + line, code))
+
+            mod = compile("".join(code), filepath, "exec")
 
             try:
                 mod_dict = {}
                 exec(mod, mod_dict)
 
-                ai = mod_dict["decide"]
+                return mod_dict["decide"]
             except Exception as e:
-                raise Exception(f"AI {filepath!r} does not have a 'decide' function") from e
-
-            return ai
+                raise InvalidAiOutputError(f"AI {filepath!r} does not have a 'decide' function.") from e
         except Exception as e:
             # print(f"Error while loading AI {filepath!r}", file=sys.stderr)
             # traceback.print_exc(file=sys.stderr)
             # print(file=sys.stderr)
 
-            raise NotImplementedError(f"Error while loading AI {filepath!r}. Dummy AIs are not allowed.") from e
+            raise InvalidAiOutputError(f"Error while loading AI {filepath!r}. Dummy AIs are not allowed.") from e
 
     @classmethod
     def from_file(cls, filepath: str) -> "LocalPlayerAI":
@@ -659,10 +672,9 @@ class GRPCClientPlayer(InternalPlayer):
 class World:
     """The world in which the game takes place. This class mainly handles the torus geometry."""
 
-    def __init__(self, width, height, debug_mode=True):
+    def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.debug_mode = debug_mode
 
     def normalize_position(self, pos: Vector):
         pos.x -= math.floor(pos.x / self.width) * self.width
