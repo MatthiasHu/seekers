@@ -39,6 +39,8 @@ class ScoreAnimation(Animation):
             pygame.draw.circle(screen, self.color, (int(self.position.x + dx), int(self.position.y + dy)), int(r), 1)
 
 
+# TODO: Refactor below code into GameRenderer class
+
 def init(players: Iterable[InternalPlayer]):
     global font
     global name_images
@@ -176,10 +178,9 @@ def draw_information(players: Iterable[InternalPlayer], pos: Vector, clock: pyga
     global name_images
     global font
 
-    if world.debug_mode:
-        # draw fps
-        fps = int(clock.get_fps())
-        draw_text(str(fps), [250, 250, 250], pos, screen, center=False)
+    # draw fps
+    fps = int(clock.get_fps())
+    draw_text(str(fps), [250, 250, 250], pos, screen, center=False)
 
     dx = Vector(40, 0)
     dy = Vector(0, 30)
