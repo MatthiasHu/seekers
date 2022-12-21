@@ -205,6 +205,9 @@ class Vector:
     def map(self, func: typing.Callable[[float], float]) -> "Vector":
         return Vector(func(self.x), func(self.y))
 
+    def copy(self) -> "Vector":
+        return Vector(self.x, self.y)
+
     def __repr__(self):
         return f"Vector({self.x}, {self.y})"
 
